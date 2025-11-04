@@ -1,7 +1,10 @@
 package com.libratrack.api.controller;
 
+import com.libratrack.api.dto.LoginResponseDTO;
 import com.libratrack.api.entity.Usuario; // Tu entidad Usuario
 import com.libratrack.api.service.UsuarioService; // Tu servicio de Usuario
+import com.libratrack.api.service.jwt.JwtService;
+
 import jakarta.validation.Valid; // Para validar los objetos Usuario en la petición
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus; // Para los códigos de estado HTTP
@@ -18,6 +21,9 @@ public class AuthController {
 
     @Autowired // Inyecta tu servicio de usuario aquí
     private UsuarioService usuarioService;
+
+    @Autowired
+    private JwtService jwtService;
 
     /**
      * Endpoint para registrar un nuevo usuario (RF01).
@@ -52,32 +58,33 @@ public class AuthController {
 
     /**
      * Endpoint para el login de usuario (RF02).
+     * Devuelve un Token JWT si el login es exitoso.
      *
      * URL: POST /api/auth/login
      * Cuerpo de la petición: { "username": "...", "password": "..." }
-     *
-     * @param loginRequest Un mapa con el username y el password.
-     * @return ResponseEntity con el usuario logueado o errores.
      */
-    @PostMapping("/login") // Este método responderá a peticiones POST en /api/auth/login
+    @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody Map<String, String> loginRequest) {
         String username = loginRequest.get("username");
         String password = loginRequest.get("password");
 
-        // Validaciones básicas antes de llamar al servicio
         if (username == null || username.trim().isEmpty() || password == null || password.trim().isEmpty()) {
             return new ResponseEntity<>("El nombre de usuario y la contraseña no pueden estar vacíos", HttpStatus.BAD_REQUEST);
         }
 
         try {
-            // 1. Llamar al servicio para intentar el login
+            // 1. Llamar al servicio para validar las credenciales
             Usuario usuarioLogueado = usuarioService.login(username, password);
-            // Quitamos la contraseña de la respuesta por seguridad
-            usuarioLogueado.setPassword(null);
-            return new ResponseEntity<>(usuarioLogueado, HttpStatus.OK); // Código 200 (OK)
+
+            // 2. Si las credenciales son correctas, generar un token JWT
+            String token = jwtService.generateToken(usuarioLogueado.getUsername());
+
+            // 3. Devolver el token en un DTO
+            return new ResponseEntity<>(new LoginResponseDTO(token), HttpStatus.OK); // 200 OK
+
         } catch (Exception e) {
             // 2. Manejar errores del servicio (ej. credenciales incorrectas)
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.UNAUTHORIZED); // Código 401 (No autorizado)
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.UNAUTHORIZED); // 401 No autorizado
         }
     }
 }
