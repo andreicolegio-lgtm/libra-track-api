@@ -38,6 +38,10 @@ public class SecurityConfig {
                 // Permitimos que CUALQUIERA acceda a nuestras rutas de autenticación (RF01, RF02)
                 .requestMatchers("/api/auth/**").permitAll()
                 // Cualquier otra petición (ej. /api/elementos) requerirá autenticación
+                .requestMatchers("/api/admin/**").permitAll() // Temporal
+                .requestMatchers("/api/elementos/**").permitAll() // Temporal
+                // AÑADE ESTA LÍNATEMPORAL:
+                .requestMatchers("/api/catalogo/**").permitAll()
                 .anyRequest().authenticated()
             )
             
