@@ -40,6 +40,7 @@ public class SecurityConfig {
                 // AÑADE ESTA LÍNEA: Permite temporalmente las rutas de admin para probar
                 .requestMatchers("/api/admin/**").permitAll()
                 // Cualquier otra petición (ej. /api/elementos) requerirá autenticación
+                .requestMatchers("/api/elementos/**").permitAll() // <-- AÑADE ESTA LÍNEA
                 .anyRequest().authenticated()
             )
             
