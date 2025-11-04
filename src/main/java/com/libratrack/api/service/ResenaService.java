@@ -1,6 +1,7 @@
 package com.libratrack.api.service;
 
 import com.libratrack.api.dto.ResenaDTO;
+import com.libratrack.api.dto.ResenaResponseDTO;
 import com.libratrack.api.entity.Elemento;
 import com.libratrack.api.entity.Resena;
 import com.libratrack.api.entity.Usuario;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class ResenaService {
@@ -26,12 +28,20 @@ public class ResenaService {
     private ElementoRepository elementoRepo;
 
     /**
-     * Obtiene todas las reseñas de un elemento específico (RF12).
+     * Obtiene todas las reseñas de un elemento específico (RF12)
+     * y las mapea a DTOs para la respuesta.
      * @param elementoId El ID del elemento.
-     * @return Lista de sus reseñas.
+     * @return Lista de DTOs de reseñas.
      */
-    public List<Resena> getResenasByElementoId(Long elementoId) {
-        return resenaRepo.findByElementoIdOrderByFechaCreacionDesc(elementoId);
+    public List<ResenaResponseDTO> getResenasByElementoId(Long elementoId) {
+        // 1. Buscamos las entidades en la base de datos
+        List<Resena> resenas = resenaRepo.findByElementoIdOrderByFechaCreacionDesc(elementoId);
+
+        // 2. Mapeamos (convertimos) la List<Resena> a List<ResenaResponseDTO>
+        // Usamos el constructor que creamos en el DTO.
+        return resenas.stream()
+                .map(ResenaResponseDTO::new)
+                .collect(Collectors.toList());
     }
 
     /**

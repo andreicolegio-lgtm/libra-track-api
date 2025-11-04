@@ -1,6 +1,7 @@
 package com.libratrack.api.controller;
 
 import com.libratrack.api.dto.ResenaDTO;
+import com.libratrack.api.dto.ResenaResponseDTO;
 import com.libratrack.api.entity.Resena;
 import com.libratrack.api.service.ResenaService;
 import jakarta.validation.Valid;
@@ -21,12 +22,11 @@ public class ResenaController {
     /**
      * Endpoint para obtener todas las reseñas de un elemento específico (RF12).
      * URL: GET /api/resenas/elemento/1
-     * (Donde 1 es el elementoId)
      */
     @GetMapping("/elemento/{elementoId}")
-    public ResponseEntity<List<Resena>> getResenasDelElemento(@PathVariable Long elementoId) {
-        List<Resena> resenas = resenaService.getResenasByElementoId(elementoId);
-        return ResponseEntity.ok(resenas); // Devuelve 200 OK
+    public ResponseEntity<List<ResenaResponseDTO>> getResenasDelElemento(@PathVariable Long elementoId) {
+        List<ResenaResponseDTO> resenasDTOs = resenaService.getResenasByElementoId(elementoId);
+        return ResponseEntity.ok(resenasDTOs); // Devuelve 200 OK con la lista de DTOs
     }
 
     /**
