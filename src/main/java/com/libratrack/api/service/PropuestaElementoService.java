@@ -36,10 +36,10 @@ public class PropuestaElementoService {
      * @param proponenteId El ID del usuario (extraído del token JWT) que hace la propuesta.
      * @return La PropuestaElemento guardada.
      */
-    public PropuestaElemento createPropuesta(PropuestaRequestDTO dto, Long proponenteId) throws Exception {
-        // 1. Buscar al usuario proponente
-        Usuario proponente = usuarioRepo.findById(proponenteId)
-                .orElseThrow(() -> new Exception("Usuario no encontrado."));
+    public PropuestaElemento createPropuesta(PropuestaRequestDTO dto, String proponenteUsername) throws Exception {
+        // 1. Buscar al usuario proponente por su nombre (del token)
+        Usuario proponente = usuarioRepo.findByUsername(proponenteUsername)
+                .orElseThrow(() -> new Exception("Usuario proponente no encontrado."));
 
         // 2. Crear la nueva entidad Propuesta
         PropuestaElemento nuevaPropuesta = new PropuestaElemento();

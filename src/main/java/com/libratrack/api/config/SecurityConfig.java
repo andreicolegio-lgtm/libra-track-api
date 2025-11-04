@@ -5,6 +5,7 @@ import com.libratrack.api.service.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -68,10 +69,21 @@ public class SecurityConfig {
             
             // Define qué rutas son públicas y cuáles privadas
             .authorizeHttpRequests(auth -> auth
-                // 1. Permitimos que CUALQUIERA acceda a nuestras rutas de autenticación (RF01, RF02)
+                // 1. Rutas Públicas (Registro y Login)
                 .requestMatchers("/api/auth/**").permitAll()
-
-                // 2. CUALQUIER OTRA petición requerirá autenticación
+                
+                // 2. Rutas de Moderación (RF14, RF15)
+                // SOLO usuarios con el rol "ROLE_MODERADOR" pueden acceder
+                .requestMatchers("/api/moderacion/**").hasAuthority("ROLE_MODERADOR")
+                
+                // 3. Rutas de Usuario (Proponer, Catálogo, Reseñas, etc.)
+                // (Usamos HttpMethod para ser específicos)
+                .requestMatchers(HttpMethod.POST, "/api/propuestas").hasAuthority("ROLE_USER")
+                .requestMatchers("/api/catalogo/**").hasAuthority("ROLE_USER")
+                .requestMatchers("/api/resenas/**").hasAuthority("ROLE_USER")
+                .requestMatchers("/api/elementos/**").hasAuthority("ROLE_USER")
+                
+                // 4. CUALQUIER OTRA petición (que no hayamos listado) será denegada
                 .anyRequest().authenticated()
             )
             
