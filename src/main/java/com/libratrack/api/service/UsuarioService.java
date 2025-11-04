@@ -3,6 +3,7 @@ package com.libratrack.api.service;
 import com.libratrack.api.entity.Usuario; // Importa tu Entidad
 import com.libratrack.api.repository.UsuarioRepository; // Importa tu Repositorio
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 // (Importaremos la seguridad más adelante cuando la configuremos)
@@ -21,9 +22,8 @@ public class UsuarioService {
     @Autowired // Pide a Spring que inyecte el Repositorio aquí
     private UsuarioRepository usuarioRepository;
 
-    // (Descomentaremos esto cuando configuremos la seguridad)
-    // @Autowired
-    // private PasswordEncoder passwordEncoder;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
 
     // --- MÉTODOS DE LÓGICA DE NEGOCIO ---
@@ -51,9 +51,10 @@ public class UsuarioService {
         // String passCifrada = passwordEncoder.encode(nuevoUsuario.getPassword());
         // nuevoUsuario.setPassword(passCifrada);
         
-        // (Línea temporal hasta que configuremos seguridad)
-        // No hagas esto en producción, pero vale para probar:
-        nuevoUsuario.setPassword(nuevoUsuario.getPassword()); // Guardado temporal en texto plano
+        // 3. Cifrar la contraseña (¡IMPORTANTE!)
+        // Usamos el 'passwordEncoder' que inyectamos para hashear la contraseña
+        String passCifrada = passwordEncoder.encode(nuevoUsuario.getPassword());
+        nuevoUsuario.setPassword(passCifrada);
 
         // 4. Guardar el usuario en la base de datos
         return usuarioRepository.save(nuevoUsuario);
@@ -79,11 +80,9 @@ public class UsuarioService {
         Usuario usuario = usuarioOpt.get();
 
         // 2. Comprobar la contraseña
-        // (Línea temporal hasta que configuremos seguridad)
-        // La comprobación real sería:
-        // if (passwordEncoder.matches(password, usuario.getPassword())) { ... }
-        
-        if (usuario.getPassword().equals(password)) {
+        // Usamos .matches() para comparar la contraseña en texto plano (password)
+        // con la contraseña cifrada que está en la base de datos (usuario.getPassword())
+        if (passwordEncoder.matches(password, usuario.getPassword())) {
             // ¡Login correcto!
             return usuario;
         } else {
