@@ -37,10 +37,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Permitimos que CUALQUIERA acceda a nuestras rutas de autenticación (RF01, RF02)
                 .requestMatchers("/api/auth/**").permitAll()
-                // AÑADE ESTA LÍNEA: Permite temporalmente las rutas de admin para probar
-                .requestMatchers("/api/admin/**").permitAll()
                 // Cualquier otra petición (ej. /api/elementos) requerirá autenticación
-                .requestMatchers("/api/elementos/**").permitAll() // <-- AÑADE ESTA LÍNEA
                 .anyRequest().authenticated()
             )
             
