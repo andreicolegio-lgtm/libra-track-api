@@ -35,8 +35,11 @@ public class SecurityConfig {
 
             // 2. Definir las reglas de autorización (quién puede acceder a qué)
             .authorizeHttpRequests(auth -> auth
-                // PERMITIMOS ODO TEMPORALMENTE PARA EL DEBUGGEO
-                .requestMatchers("/**").permitAll()
+                // 1. Permitimos que CUALQUIERA acceda a nuestras rutas de autenticación (RF01, RF02)
+                .requestMatchers("/api/auth/**").permitAll()
+                
+                // 2. CUALQUIER OTRA petición requerirá autenticación
+                .anyRequest().authenticated()
             )
             
             // 3. Configurar la gestión de sesiones

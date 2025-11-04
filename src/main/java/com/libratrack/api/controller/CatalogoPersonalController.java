@@ -1,7 +1,7 @@
 package com.libratrack.api.controller;
 
+import com.libratrack.api.dto.CatalogoPersonalResponseDTO;
 import com.libratrack.api.dto.CatalogoUpdateDTO;
-import com.libratrack.api.entity.CatalogoPersonal;
 import com.libratrack.api.service.CatalogoPersonalService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -25,10 +25,8 @@ public class CatalogoPersonalController {
      * (Donde 1 es el usuarioId)
      */
     @GetMapping
-    public ResponseEntity<List<CatalogoPersonal>> getCatalogoDelUsuario(@PathVariable Long usuarioId) {
-        // NOTA: En una app real, obtendríamos el usuarioId del token,
-        // no de la URL, para que un usuario no pueda ver el catálogo de otro.
-        List<CatalogoPersonal> catalogo = catalogoService.getCatalogoByUsuarioId(usuarioId);
+    public ResponseEntity<List<CatalogoPersonalResponseDTO>> getCatalogoDelUsuario(@PathVariable Long usuarioId) {
+        List<CatalogoPersonalResponseDTO> catalogo = catalogoService.getCatalogoByUsuarioId(usuarioId);
         return ResponseEntity.ok(catalogo);
     }
 
@@ -42,10 +40,10 @@ public class CatalogoPersonalController {
             @PathVariable Long usuarioId,
             @PathVariable Long elementoId) {
         try {
-            CatalogoPersonal nuevaEntrada = catalogoService.addElementoAlCatalogo(usuarioId, elementoId);
-            return new ResponseEntity<>(nuevaEntrada, HttpStatus.CREATED); // 201 Created
+            CatalogoPersonalResponseDTO nuevaEntrada = catalogoService.addElementoAlCatalogo(usuarioId, elementoId);
+            return new ResponseEntity<>(nuevaEntrada, HttpStatus.CREATED);
         } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.CONFLICT); // 409 Conflicto (ej. ya existe)
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.CONFLICT);
         }
     }
 
@@ -58,12 +56,12 @@ public class CatalogoPersonalController {
     public ResponseEntity<?> updateElementoDelCatalogo(
             @PathVariable Long usuarioId,
             @PathVariable Long elementoId,
-            @RequestBody CatalogoUpdateDTO dto) { // Usa el DTO que creamos
+            @RequestBody CatalogoUpdateDTO dto) {
         try {
-            CatalogoPersonal entradaActualizada = catalogoService.updateEntradaCatalogo(usuarioId, elementoId, dto);
-            return ResponseEntity.ok(entradaActualizada); // 200 OK
+            CatalogoPersonalResponseDTO entradaActualizada = catalogoService.updateEntradaCatalogo(usuarioId, elementoId, dto);
+            return ResponseEntity.ok(entradaActualizada);
         } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND); // 404 No Encontrado
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
         }
     }
 

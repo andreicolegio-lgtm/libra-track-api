@@ -2,7 +2,6 @@ package com.libratrack.api.controller;
 
 import com.libratrack.api.dto.ResenaDTO;
 import com.libratrack.api.dto.ResenaResponseDTO;
-import com.libratrack.api.entity.Resena;
 import com.libratrack.api.service.ResenaService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +38,7 @@ public class ResenaController {
         // NOTA: En una app real, el 'usuarioId' lo sacaríamos del token JWT
         // para asegurar que un usuario solo puede publicar como él mismo.
         try {
-            Resena nuevaResena = resenaService.createResena(resenaDTO);
+            ResenaResponseDTO nuevaResena = resenaService.createResena(resenaDTO);
             return new ResponseEntity<>(nuevaResena, HttpStatus.CREATED); // 201 Created
         } catch (Exception e) {
             // Captura cualquier error del servicio (ej. "Ya has reseñado este elemento")

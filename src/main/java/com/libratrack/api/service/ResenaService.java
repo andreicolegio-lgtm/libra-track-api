@@ -49,7 +49,7 @@ public class ResenaService {
      * @param dto El DTO con los datos de la reseña.
      * @return La nueva reseña creada.
      */
-    public Resena createResena(ResenaDTO dto) throws Exception {
+    public ResenaResponseDTO createResena(ResenaDTO dto) throws Exception {
         // 1. Verificar si el usuario ya ha reseñado este elemento
         Optional<Resena> existingResena = resenaRepo.findByUsuarioIdAndElementoId(dto.getUsuarioId(), dto.getElementoId());
         if (existingResena.isPresent()) {
@@ -75,6 +75,7 @@ public class ResenaService {
         nuevaResena.setTextoResena(dto.getTextoResena());
         // La fecha se asigna automáticamente con @PrePersist
 
-        return resenaRepo.save(nuevaResena);
+        Resena resenaGuardada = resenaRepo.save(nuevaResena);
+        return new ResenaResponseDTO(resenaGuardada); // Devuelve el DTO de respuesta
     }
 }

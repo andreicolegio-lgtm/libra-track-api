@@ -1,5 +1,6 @@
 package com.libratrack.api.service;
 
+import com.libratrack.api.dto.CatalogoPersonalResponseDTO;
 import com.libratrack.api.dto.CatalogoUpdateDTO;
 import com.libratrack.api.entity.CatalogoPersonal;
 import com.libratrack.api.entity.Elemento;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class CatalogoPersonalService {
@@ -29,8 +31,12 @@ public class CatalogoPersonalService {
      * @param usuarioId El ID del usuario.
      * @return Lista de sus entradas de catálogo.
      */
-    public List<CatalogoPersonal> getCatalogoByUsuarioId(Long usuarioId) {
-        return catalogoRepo.findByUsuarioId(usuarioId);
+    public List<CatalogoPersonalResponseDTO> getCatalogoByUsuarioId(Long usuarioId) {
+        List<CatalogoPersonal> catalogo = catalogoRepo.findByUsuarioId(usuarioId);
+        // Mapeamos la lista de Entidades a una lista de DTOs
+        return catalogo.stream()
+            .map(CatalogoPersonalResponseDTO::new)
+            .collect(Collectors.toList());
     }
 
     /**
@@ -39,26 +45,24 @@ public class CatalogoPersonalService {
      * @param elementoId El ID del elemento a añadir.
      * @return La nueva entrada del catálogo creada.
      */
-    public CatalogoPersonal addElementoAlCatalogo(Long usuarioId, Long elementoId) throws Exception {
-        // 1. Verificar si el elemento ya está en el catálogo
+    public CatalogoPersonalResponseDTO addElementoAlCatalogo(Long usuarioId, Long elementoId) throws Exception {
+        // ... (toda la lógica de verificación de 'if/else' y 'try/catch' se queda igual) ...
         if (catalogoRepo.findByUsuarioIdAndElementoId(usuarioId, elementoId).isPresent()) {
             throw new Exception("Este elemento ya está en tu catálogo.");
         }
-
-        // 2. Verificar que el usuario y el elemento existen
         Usuario usuario = usuarioRepo.findById(usuarioId)
                 .orElseThrow(() -> new Exception("Usuario no encontrado."));
         Elemento elemento = elementoRepo.findById(elementoId)
                 .orElseThrow(() -> new Exception("Elemento no encontrado."));
 
-        // 3. Crear la nueva entrada del catálogo
         CatalogoPersonal nuevaEntrada = new CatalogoPersonal();
         nuevaEntrada.setUsuario(usuario);
         nuevaEntrada.setElemento(elemento);
-        // El estado por defecto (PENDIENTE) se asigna automáticamente
-        // gracias al @PrePersist y el valor por defecto en la Entidad.
 
-        return catalogoRepo.save(nuevaEntrada);
+        CatalogoPersonal entradaGuardada = catalogoRepo.save(nuevaEntrada);
+
+        // Convertimos la Entidad guardada a un DTO para la respuesta
+        return new CatalogoPersonalResponseDTO(entradaGuardada);
     }
 
     /**
@@ -68,22 +72,21 @@ public class CatalogoPersonalService {
      * @param dto El DTO con los datos a actualizar.
      * @return La entrada del catálogo actualizada.
      */
-    public CatalogoPersonal updateEntradaCatalogo(Long usuarioId, Long elementoId, CatalogoUpdateDTO dto) throws Exception {
-        // 1. Buscar la entrada específica que se quiere actualizar
+    public CatalogoPersonalResponseDTO updateEntradaCatalogo(Long usuarioId, Long elementoId, CatalogoUpdateDTO dto) throws Exception {
         CatalogoPersonal entrada = catalogoRepo.findByUsuarioIdAndElementoId(usuarioId, elementoId)
                 .orElseThrow(() -> new Exception("Este elemento no está en tu catálogo."));
 
-        // 2. Actualizar los campos si vienen en el DTO
         if (dto.getEstadoPersonal() != null) {
-            entrada.setEstadoPersonal(dto.getEstadoPersonal()); // RF06
+            entrada.setEstadoPersonal(dto.getEstadoPersonal());
         }
-        
         if (dto.getProgresoEspecifico() != null) {
-            entrada.setProgresoEspecifico(dto.getProgresoEspecifico()); // RF07
+            entrada.setProgresoEspecifico(dto.getProgresoEspecifico());
         }
 
-        // 3. Guardar los cambios
-        return catalogoRepo.save(entrada);
+        CatalogoPersonal entradaGuardada = catalogoRepo.save(entrada);
+
+        // Convertimos la Entidad actualizada a un DTO para la respuesta
+        return new CatalogoPersonalResponseDTO(entradaGuardada);
     }
 
     /**
