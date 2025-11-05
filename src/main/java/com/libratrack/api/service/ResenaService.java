@@ -1,7 +1,7 @@
 package com.libratrack.api.service;
 
-import com.libratrack.api.dto.ResenaDTO;
-import com.libratrack.api.dto.ResenaResponseDTO;
+import com.libratrack.api.dto.ResenaDTO; // DTO para RECIBIR datos (crear)
+import com.libratrack.api.dto.ResenaResponseDTO; // DTO para ENVIAR datos (evita error 500)
 import com.libratrack.api.entity.Elemento;
 import com.libratrack.api.entity.Resena;
 import com.libratrack.api.entity.Usuario;
@@ -13,11 +13,20 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.stream.Collectors; // Para el mapeo de DTOs
 
+/**
+ * (Refactorizado por Seguridad)
+ * Servicio para la lógica de negocio relacionada con la entidad Resena (RF12).
+ *
+ * Se ha modificado 'createResena' para que acepte el 'username' del
+ * usuario autenticado (del token JWT), en lugar de un 'usuarioId'
+ * enviado por el cliente, previniendo suplantación de identidad.
+ */
 @Service
 public class ResenaService {
 
+    // --- Inyección de Dependencias ---
     @Autowired
     private ResenaRepository resenaRepo;
 
@@ -28,44 +37,53 @@ public class ResenaService {
     private ElementoRepository elementoRepo;
 
     /**
-     * Obtiene todas las reseñas de un elemento específico (RF12)
-     * y las mapea a DTOs para la respuesta.
+     * Obtiene todas las reseñas de un elemento específico (RF12).
+     *
      * @param elementoId El ID del elemento.
-     * @return Lista de DTOs de reseñas.
+     * @return Una lista de DTOs de las reseñas de ese elemento.
      */
     public List<ResenaResponseDTO> getResenasByElementoId(Long elementoId) {
-        // 1. Buscamos las entidades en la base de datos
+        
+        // 1. Buscamos las entidades en la base de datos (ordenadas)
         List<Resena> resenas = resenaRepo.findByElementoIdOrderByFechaCreacionDesc(elementoId);
 
-        // 2. Mapeamos (convertimos) la List<Resena> a List<ResenaResponseDTO>
-        // Usamos el constructor que creamos en el DTO.
+        // 2. Mapeamos (convertimos) la lista de Entidades a DTOs
+        // (Soluciona la LazyInitializationException)
         return resenas.stream()
-                .map(ResenaResponseDTO::new)
+                .map(ResenaResponseDTO::new) 
                 .collect(Collectors.toList());
     }
 
     /**
-     * Crea una nueva reseña (RF12).
-     * @param dto El DTO con los datos de la reseña.
-     * @return La nueva reseña creada.
+     * (Refactorizado) Crea una nueva reseña (RF12).
+     *
+     * @param dto El DTO (ResenaDTO) con los datos (elementoId, valoracion, texto).
+     * @param username El 'username' del usuario (obtenido del token JWT).
+     * @return El DTO (ResenaResponseDTO) de la reseña que se acaba de crear.
+     * @throws Exception Si el usuario ya ha reseñado este elemento, o si el usuario/elemento no existen.
      */
-    public ResenaResponseDTO createResena(ResenaDTO dto) throws Exception {
-        // 1. Verificar si el usuario ya ha reseñado este elemento
-        Optional<Resena> existingResena = resenaRepo.findByUsuarioIdAndElementoId(dto.getUsuarioId(), dto.getElementoId());
+    public ResenaResponseDTO createResena(ResenaDTO dto, String username) throws Exception {
+        
+        // 1. Verificación de Entidades (¡Usando 'username'!)
+        // Buscamos al autor (Usuario) usando el 'username' del token
+        Usuario usuario = usuarioRepo.findByUsername(username)
+                .orElseThrow(() -> new Exception("Token de usuario inválido."));
+        
+        // Buscamos el elemento que se está reseñando
+        Elemento elemento = elementoRepo.findById(dto.getElementoId())
+                .orElseThrow(() -> new Exception("Elemento no encontrado."));
+
+        // 2. Validación: Verificar si el usuario ya ha reseñado este elemento
+        // (Usamos los IDs de las entidades que encontramos)
+        Optional<Resena> existingResena = resenaRepo.findByUsuarioIdAndElementoId(usuario.getId(), elemento.getId());
         if (existingResena.isPresent()) {
             throw new Exception("Ya has reseñado este elemento.");
         }
 
-        // 2. Verificar que el usuario y el elemento existen
-        Usuario usuario = usuarioRepo.findById(dto.getUsuarioId())
-                .orElseThrow(() -> new Exception("Usuario no encontrado."));
-        Elemento elemento = elementoRepo.findById(dto.getElementoId())
-                .orElseThrow(() -> new Exception("Elemento no encontrado."));
-
         // 3. Crear la nueva entidad Resena
         Resena nuevaResena = new Resena();
-        nuevaResena.setUsuario(usuario);
-        nuevaResena.setElemento(elemento);
+        nuevaResena.setUsuario(usuario); // Asigna el autor
+        nuevaResena.setElemento(elemento); // Asigna el elemento
         
         // 4. Validar y asignar los datos de la reseña
         if (dto.getValoracion() == null || dto.getValoracion() < 1 || dto.getValoracion() > 5) {
@@ -73,9 +91,12 @@ public class ResenaService {
         }
         nuevaResena.setValoracion(dto.getValoracion());
         nuevaResena.setTextoResena(dto.getTextoResena());
-        // La fecha se asigna automáticamente con @PrePersist
+        // La fecha de creación (fechaCreacion) se asigna automáticamente con @PrePersist.
 
+        // 5. Guardar la nueva reseña
         Resena resenaGuardada = resenaRepo.save(nuevaResena);
-        return new ResenaResponseDTO(resenaGuardada); // Devuelve el DTO de respuesta
+
+        // 6. Devolver el DTO de Respuesta
+        return new ResenaResponseDTO(resenaGuardada);
     }
 }

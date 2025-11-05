@@ -1,80 +1,84 @@
 package com.libratrack.api.controller;
 
-import com.libratrack.api.dto.ElementoDTO;
-import com.libratrack.api.entity.Elemento;
+import com.libratrack.api.dto.ElementoResponseDTO; // DTO para enviar respuestas (¡Evita error 500!)
 import com.libratrack.api.service.ElementoService;
-
-import jakarta.validation.Valid;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize; // Import para seguridad a nivel de método
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
 
-@RestController
+/**
+ * Controlador REST para las rutas del catálogo principal (Elementos).
+ * Todas las rutas aquí están protegidas y requieren autenticación (un token JWT).
+ * Implementa los endpoints para RF09 (Búsqueda) y RF10 (Ficha detallada).
+ */
+@RestController // Indica a Spring que esta clase es un Controlador y devuelve JSON
 @RequestMapping("/api/elementos") // Todas las rutas aquí empiezan con /api/elementos
 public class ElementoController {
 
-    @Autowired
+    @Autowired // Inyecta el servicio que contiene la lógica de negocio
     private ElementoService elementoService;
 
     /**
      * Endpoint para obtener todos los elementos (RF09: Búsqueda Global).
-     * URL: GET /api/elementos
+     * Escucha en: GET /api/elementos
      *
-     * @return Una lista de todos los elementos.
+     * Seguridad:
+     * @PreAuthorize("hasAuthority('ROLE_USER')") asegura que solo los usuarios
+     * autenticados (con un token JWT válido que les da la autoridad 'ROLE_USER')
+     * pueden acceder a esta ruta. Si no, devuelve 403 Forbidden.
+     *
+     * @return ResponseEntity con una Lista de DTOs de los elementos (200 OK).
      */
+    @PreAuthorize("hasAuthority('ROLE_USER')")
     @GetMapping
-    public ResponseEntity<List<Elemento>> getAllElementos() {
-        List<Elemento> elementos = elementoService.findAllElementos();
+    public ResponseEntity<List<ElementoResponseDTO>> getAllElementos() {
+        // Llama al servicio, que ya devuelve una lista de DTOs (código limpio)
+        List<ElementoResponseDTO> elementos = elementoService.findAllElementos();
         return ResponseEntity.ok(elementos); // Devuelve 200 OK
     }
 
     /**
      * Endpoint para obtener un elemento por su ID (RF10: Ficha Detallada).
-     * URL: GET /api/elementos/1 (donde 1 es el ID)
+     * Escucha en: GET /api/elementos/1 (donde 1 es el ID)
      *
-     * @param id El ID del elemento a buscar, extraído de la URL.
-     * @return El Elemento si se encuentra (200 OK) o un error (404 Not Found).
+     * Seguridad:
+     * Protegido con @PreAuthorize, requiere ser 'ROLE_USER'.
+     *
+     * @param id El ID del elemento a buscar (extraído de la URL con @PathVariable).
+     * @return ResponseEntity:
+     * - 200 (OK) con el DTO del Elemento si se encuentra.
+     * - 404 (Not Found) si el ID no existe en la base de datos.
      */
+    @PreAuthorize("hasAuthority('ROLE_USER')")
     @GetMapping("/{id}")
     public ResponseEntity<?> getElementoById(@PathVariable Long id) {
-        Optional<Elemento> elementoOptional = elementoService.findElementoById(id);
+        
+        // Llama al servicio, que devuelve un Optional<ElementoResponseDTO>
+        Optional<ElementoResponseDTO> elementoDTOOptional = elementoService.findElementoById(id);
 
-        if (elementoOptional.isPresent()) {
+        if (elementoDTOOptional.isPresent()) {
             // Si encontramos el elemento, lo devolvemos
-            return ResponseEntity.ok(elementoOptional.get()); // 200 OK
+            return ResponseEntity.ok(elementoDTOOptional.get()); // 200 OK
         } else {
-            // Si no, devolvemos un error 404
-            return new ResponseEntity<>("Elemento no encontrado", HttpStatus.NOT_FOUND); // 404 Not Found
+            // Si no, devolvemos un error 404 claro
+            return new ResponseEntity<>("Elemento no encontrado con id: " + id, HttpStatus.NOT_FOUND); // 404
         }
     }
 
-    /**
-     * Endpoint para crear un nuevo elemento (RF13: Proponer).
-     * URL: POST /api/elementos
+    /*
+     * NOTA SOBRE EL POST /api/elementos (RF13):
      *
-     * @param elementoDTO El DTO con los datos del elemento a crear.
-     * @return El Elemento creado (201) o un error (400).
+     * La lógica para *crear* elementos (RF13) la hemos implementado
+     * en el 'PropuestaController' (para usuarios) y en el
+     * 'ModeracionController' (para moderadores), ya que tu diseño
+     * requiere que toda la creación de contenido pase por la cola de moderación.
+     *
+     * (Si quisiéramos un endpoint de Admin para crear un elemento 'OFICIAL'
+     * directamente, lo añadiríamos aquí con @PreAuthorize("hasAuthority('ROLE_ADMIN')")).
      */
-    @PostMapping
-    public ResponseEntity<?> createElemento(@Valid @RequestBody ElementoDTO elementoDTO) {
-        // NOTA: Más adelante, el 'creadorId' lo sacaremos de un token JWT
-        // en lugar de confiar en el DTO, pero para probar está bien.
-        try {
-            Elemento nuevoElemento = elementoService.createElemento(elementoDTO);
-            return new ResponseEntity<>(nuevoElemento, HttpStatus.CREATED); // 201 Created
-        } catch (Exception e) {
-            // Captura cualquier error del servicio (ej. "Tipo no encontrado")
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST); // 400 Bad Request
-        }
-    }
 }

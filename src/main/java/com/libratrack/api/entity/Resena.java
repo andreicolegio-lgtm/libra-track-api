@@ -3,13 +3,21 @@ package com.libratrack.api.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 
+/**
+ * Entidad que representa la tabla 'resenas' en la base de datos.
+ * Esta es una entidad de relación N-a-M entre Usuario y Elemento
+ * que tiene sus propios atributos (valoración y texto).
+ * Implementa el requisito RF12.
+ */
 @Entity
 @Table(name = "resenas",
-    // Restricción para asegurar que un Usuario solo puede reseñar UN Elemento una vez
+    // Restricción a nivel de BD para asegurar que un Usuario
+    // solo pueda reseñar UN Elemento una sola vez.
     uniqueConstraints = {
         @UniqueConstraint(columnNames = {"usuario_id", "elemento_id"})
     }
@@ -20,45 +28,79 @@ public class Resena {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // --- Relaciones ---
+    // ===================================================================
+    // RELACIONES
+    // ===================================================================
 
-    // La reseña pertenece a un Usuario (RF12)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "usuario_id", nullable = false)
+    /**
+     * RELACIÓN 1: El Usuario (Autor)
+     * Muchas reseñas pertenecen a Un solo Usuario.
+     * Esta es la clave FK 'usuario_id'.
+     */
+    @ManyToOne(fetch = FetchType.LAZY) // Carga perezosa para optimización
+    @JoinColumn(name = "usuario_id", nullable = false) // Define la columna FK
+    @NotNull
     private Usuario usuario;
 
-    // La reseña es sobre un Elemento (RF12)
+    /**
+     * RELACIÓN 2: El Elemento (Reseñado)
+     * Muchas reseñas apuntan a Un solo Elemento.
+     * Esta es la clave FK 'elemento_id'.
+     */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "elemento_id", nullable = false)
+    @JoinColumn(name = "elemento_id", nullable = false) // Define la columna FK
+    @NotNull
     private Elemento elemento;
 
-    // --- Atributos de la Reseña ---
+    // ===================================================================
+    // ATRIBUTOS PROPIOS DE LA RESEÑA (RF12)
+    // ===================================================================
 
+    /**
+     * La valoración numérica (ej. 1-5 estrellas) que da el usuario.
+     */
     @Min(value = 1, message = "La valoración mínima es 1")
     @Max(value = 5, message = "La valoración máxima es 5")
     @Column(nullable = false)
-    private Integer valoracion; // (RF12)
+    @NotNull
+    private Integer valoracion;
 
+    /**
+     * El texto de la reseña (opcional).
+     * @Lob (Large Object) se mapea a 'TEXT' en MySQL.
+     */
     @Size(max = 2000, message = "La reseña no puede exceder los 2000 caracteres")
-    @Lob // Tipo de dato TEXT en la BD
+    @Lob 
     private String textoResena;
 
+    /**
+     * Marca de tiempo de cuándo se creó la reseña.
+     * 'updatable = false' asegura que no se pueda modificar.
+     */
     @Column(nullable = false, updatable = false)
     private LocalDateTime fechaCreacion;
 
     // --- Métodos de ciclo de vida ---
-    @PrePersist // Se ejecuta antes de guardar por primera vez
+
+    /**
+     * Este método se ejecuta automáticamente ANTES de que una nueva
+     * reseña se guarde en la base de datos por primera vez.
+     * Se usa para establecer la marca de tiempo 'fechaCreacion'.
+     */
+    @PrePersist
     protected void onCrear() {
         this.fechaCreacion = LocalDateTime.now();
     }
 
-    // --- Getters y Setters & Constructores ---
-    // (Estos los puedes dejar que VS Code los autogenere o pegarlos si quieres)
+    // --- Constructores ---
 
     public Resena() {
+        // Constructor vacío requerido por JPA
     }
 
-    // Getters y Setters...
+    // --- Getters y Setters ---
+    // Métodos públicos necesarios para que Spring (JPA y Jackson)
+    // pueda leer y escribir en los campos privados de esta clase.
 
     public Long getId() {
         return id;
