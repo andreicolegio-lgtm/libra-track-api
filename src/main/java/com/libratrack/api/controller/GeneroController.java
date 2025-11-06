@@ -1,40 +1,47 @@
 package com.libratrack.api.controller;
 
-import com.libratrack.api.entity.Genero; // Importa la entidad Genero
-import com.libratrack.api.service.GeneroService; // Importa el servicio Genero
-import jakarta.validation.Valid; // Import para @Valid
+import com.libratrack.api.entity.Genero; 
+import com.libratrack.api.service.GeneroService; 
+import jakarta.validation.Valid; 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize; // ¡Import para la seguridad!
+import org.springframework.security.access.prepost.PreAuthorize; 
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 /**
- * Controlador REST para la gestión administrativa de Géneros de contenido.
- * Implementa los endpoints para crear y listar Géneros.
- *
- * Seguridad (RF03, RF14):
- * Esta clase implementa la seguridad basada en roles. La anotación @PreAuthorize
- * a nivel de clase bloquea todos los endpoints, permitiendo el acceso
- * solo a usuarios que tengan la autoridad 'ROLE_MODERADOR'.
+ * Controlador REST para la gestión de Géneros de contenido.
  */
 @RestController
-@RequestMapping("/api/admin/generos") // Ruta base para la administración de Géneros
-@PreAuthorize("hasAuthority('ROLE_MODERADOR')") // ¡Seguridad a nivel de CLASE!
+@RequestMapping("/api/admin/generos") 
+@PreAuthorize("hasAuthority('ROLE_MODERADOR')") // ¡Protege toda la clase por defecto!
 public class GeneroController {
 
     @Autowired
-    private GeneroService generoService; // Inyecta el "cerebro"
+    private GeneroService generoService;
+
+    // --- NUEVO ENDPOINT PÚBLICO (RF09) ---
+    /**
+     * Endpoint para que CUALQUIER usuario autenticado obtenga la lista de Géneros.
+     * Escucha en: GET /api/generos
+     *
+     * Nota: La ruta de la clase ha sido ignorada, y la seguridad
+     * es más relajada que la de la clase.
+     */
+    @GetMapping("/api/generos") // Nueva ruta base para la consulta de usuarios
+    @PreAuthorize("isAuthenticated()") // Acceso para CUALQUIER usuario logueado
+    public ResponseEntity<List<Genero>> getGenerosParaCatalogo() {
+        // Llama al mismo servicio que ya tienes
+        return ResponseEntity.ok(generoService.getAllGeneros());
+    }
+    // --- FIN DEL NUEVO ENDPOINT ---
 
     /**
-     * Endpoint para obtener todos los Géneros existentes.
+     * Endpoint para obtener todos los Géneros existentes (ADMIN).
      * Escucha en: GET /api/admin/generos
-     *
-     * (Seguridad: Heredada de la clase - solo Moderadores)
-     *
-     * @return ResponseEntity con una Lista de todas las entidades Genero (200 OK).
+     * (Hereda la seguridad de ROLE_MODERADOR)
      */
     @GetMapping
     public ResponseEntity<List<Genero>> getAllGeneros() {
@@ -42,25 +49,17 @@ public class GeneroController {
     }
 
     /**
-     * Endpoint para crear un nuevo Genero (ej. "Ciencia Ficción", "Drama").
+     * Endpoint para crear un nuevo Genero (ADMIN).
      * Escucha en: POST /api/admin/generos
-     *
-     * (Seguridad: Heredada de la clase - solo Moderadores)
-     *
-     * @param genero El objeto Genero (del JSON) con el nombre a crear.
-     * @return ResponseEntity:
-     * - 201 (Created) con el nuevo Genero creado.
-     * - 400 (Bad Request) si el nombre está vacío o ya existe.
+     * (Hereda la seguridad de ROLE_MODERADOR)
      */
     @PostMapping
     public ResponseEntity<?> createGenero(@Valid @RequestBody Genero genero) {
-        // (@Valid activa las validaciones @NotBlank de la entidad Genero)
         try {
             Genero nuevoGenero = generoService.createGenero(genero);
-            return new ResponseEntity<>(nuevoGenero, HttpStatus.CREATED); // 201 Created
+            return new ResponseEntity<>(nuevoGenero, HttpStatus.CREATED);
         } catch (Exception e) {
-            // Captura errores (ej. 'unique constraint' si el nombre ya existe)
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST); // 400
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
 }

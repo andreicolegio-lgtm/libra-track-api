@@ -33,10 +33,12 @@ public class ElementoController {
     @PreAuthorize("hasAuthority('ROLE_USER')")
     @GetMapping
     public ResponseEntity<List<ElementoResponseDTO>> getAllElementos(
-            @RequestParam(required = false) String searchText) {
+            @RequestParam(value = "search", required = false) String searchText,
+            @RequestParam(value = "tipo", required = false) String tipoName,
+            @RequestParam(value = "genero", required = false) String generoName) {
 
-        // Llama al servicio, pasándole el parámetro de búsqueda
-        List<ElementoResponseDTO> elementos = elementoService.findAllElementos(searchText);
+        // Llama al servicio, pasándole los 3 parámetros de filtro
+        List<ElementoResponseDTO> elementos = elementoService.findAllElementos(searchText, tipoName, generoName);
         return ResponseEntity.ok(elementos); // Devuelve 200 OK
     }
 

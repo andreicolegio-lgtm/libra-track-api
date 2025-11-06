@@ -2,38 +2,46 @@ package com.libratrack.api.controller;
 
 import com.libratrack.api.entity.Tipo;
 import com.libratrack.api.service.TipoService;
-import jakarta.validation.Valid; // Import para @Valid
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize; // ¡Import para la seguridad!
+import org.springframework.security.access.prepost.PreAuthorize; 
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 /**
- * Controlador REST para la gestión administrativa de Tipos de contenido.
- * Implementa los endpoints para crear y listar Tipos.
- *
- * Seguridad (RF03, RF14):
- * Toda esta clase está protegida. Solo los usuarios con la autoridad
- * 'ROLE_MODERADOR' pueden acceder a estas rutas.
+ * Controlador REST para la gestión de Tipos de contenido.
  */
 @RestController
-@RequestMapping("/api/admin/tipos") // Ruta base para la administración de Tipos
-@PreAuthorize("hasAuthority('ROLE_MODERADOR')") // ¡Seguridad a nivel de CLASE!
+@RequestMapping("/api/admin/tipos") 
+@PreAuthorize("hasAuthority('ROLE_MODERADOR')") // ¡Protege toda la clase por defecto!
 public class TipoController {
 
     @Autowired
     private TipoService tipoService;
+    
+    // --- NUEVO ENDPOINT PÚBLICO (RF09) ---
+    /**
+     * Endpoint para que CUALQUIER usuario autenticado obtenga la lista de Tipos.
+     * Escucha en: GET /api/tipos
+     *
+     * Nota: La ruta de la clase ha sido ignorada, y la seguridad
+     * es más relajada que la de la clase.
+     */
+    @GetMapping("/api/tipos") // Nueva ruta base para la consulta de usuarios
+    @PreAuthorize("isAuthenticated()") // Acceso para CUALQUIER usuario logueado
+    public ResponseEntity<List<Tipo>> getTiposParaCatalogo() {
+        // Llama al mismo servicio que ya tienes
+        return ResponseEntity.ok(tipoService.getAllTipos()); 
+    }
+    // --- FIN DEL NUEVO ENDPOINT ---
 
     /**
-     * Endpoint para obtener todos los Tipos existentes.
+     * Endpoint para obtener todos los Tipos existentes (ADMIN).
      * Escucha en: GET /api/admin/tipos
-     *
-     * (Seguridad: Heredada de la clase - solo Moderadores)
-     *
-     * @return ResponseEntity con una Lista de todas las entidades Tipo (200 OK).
+     * (Hereda la seguridad de ROLE_MODERADOR)
      */
     @GetMapping
     public ResponseEntity<List<Tipo>> getAllTipos() {
@@ -41,25 +49,17 @@ public class TipoController {
     }
 
     /**
-     * Endpoint para crear un nuevo Tipo (ej. "Anime", "Manga").
+     * Endpoint para crear un nuevo Tipo (ADMIN).
      * Escucha en: POST /api/admin/tipos
-     *
-     * (Seguridad: Heredada de la clase - solo Moderadores)
-     *
-     * @param tipo El objeto Tipo (del JSON) con el nombre a crear.
-     * @return ResponseEntity:
-     * - 201 (Created) con el nuevo Tipo creado.
-     * - 400 (Bad Request) si el nombre está vacío o ya existe.
+     * (Hereda la seguridad de ROLE_MODERADOR)
      */
     @PostMapping
     public ResponseEntity<?> createTipo(@Valid @RequestBody Tipo tipo) {
-        // (@Valid activa las validaciones @NotBlank de la entidad Tipo)
         try {
             Tipo nuevoTipo = tipoService.createTipo(tipo);
-            return new ResponseEntity<>(nuevoTipo, HttpStatus.CREATED); // 201 Created
+            return new ResponseEntity<>(nuevoTipo, HttpStatus.CREATED);
         } catch (Exception e) {
-            // Captura errores (ej. 'unique constraint' si el nombre ya existe)
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST); // 400
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
 }
