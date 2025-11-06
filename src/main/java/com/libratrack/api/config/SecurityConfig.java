@@ -119,13 +119,13 @@ public class SecurityConfig {
             // 2. Activar CORS: Usa la configuración definida en el Bean 'corsConfigurationSource'
             .cors(withDefaults())
             
-            // 3. Definir las reglas de autorización (el "libro de reglas" simplificado)
+            // 3. Definir las reglas de autorización (Versión Corregida)
             .authorizeHttpRequests(auth -> auth
-                // 3a. Rutas Públicas: Solo el registro y el login son públicos
-                .requestMatchers("/api/auth/**").permitAll()
-                
-                // 3b. CUALQUIER OTRA petición (ej. /api/elementos, /api/catalogo)
-                // debe estar autenticada (requiere un token JWT válido).
+                // 3a. Hacemos públicas las rutas de Auth explícitamente
+                .requestMatchers("/api/auth/login").permitAll()
+                .requestMatchers("/api/auth/register").permitAll()
+
+                // 3b. CUALQUIER OTRA petición SÍ requiere autenticación
                 .anyRequest().authenticated()
             )
             // (La autorización específica por ROL, como 'hasRole("MODERADOR")',
@@ -149,6 +149,12 @@ public class SecurityConfig {
             // ANTES de su filtro de login estándar (UsernamePasswordAuthenticationFilter).
             // Esto asegura que interceptemos y validemos el token en cada petición.
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+        System.out.println(" ");
+        System.out.println("************************************************************");
+        System.out.println(">>> MI SecurityConfig SÍ SE ESTÁ CARGANDO. /api/auth/ ES PÚBLICO.");
+        System.out.println("************************************************************");
+        System.out.println(" ");
 
         return http.build();
     }
