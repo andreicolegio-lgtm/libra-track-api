@@ -1,55 +1,42 @@
 package com.libratrack.api.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.util.List;
+
 /**
- * DTO (Data Transfer Object) para la PETICIÓN de crear una nueva PropuestaElemento.
- *
- * Este es el "molde" del JSON que la app Flutter enviará cuando
- * un usuario autenticado quiera proponer nuevo contenido (RF13).
- *
- * Seguridad (Mejor Práctica):
- * Este DTO *no* contiene un 'usuarioId' o 'proponenteId'.
- * Para prevenir que un usuario intente proponer contenido en nombre de otro,
- * el ID del proponente se obtendrá *exclusivamente* del token JWT
- * (el objeto 'Principal') en la capa del Controlador (PropuestaController).
+ * DTO para RECIBIR una propuesta de Elemento del cliente (RF13).
  */
 public class PropuestaRequestDTO {
 
-    /**
-     * El título que el usuario sugiere para el nuevo elemento (RF13).
-     * @NotBlank asegura que el usuario no puede enviar un título vacío.
-     */
+    // --- Campos Requeridos del Elemento ---
+
     @NotBlank(message = "El título sugerido no puede estar vacío")
-    @Size(max = 255)
+    @Size(max = 255, message = "El título sugerido no puede exceder los 255 caracteres")
     private String tituloSugerido;
 
-    /**
-     * La descripción o sinopsis sugerida (opcional).
-     */
+    @NotBlank(message = "La descripción sugerida no puede estar vacía")
+    @Size(max = 5000, message = "La descripción sugerida no puede exceder los 5000 caracteres")
     private String descripcionSugerida;
+    
+    // --- Campos de Relación ---
+    
+    @NotNull(message = "El ID del Tipo no puede ser nulo")
+    private Long tipoIdSugerido;
 
-    /**
-     * El TIPO de contenido que el usuario sugiere (ej. "Anime", "Serie Web").
-     * Esto se almacena como un String simple, y será "traducido"
-     * a una entidad 'Tipo' por un Moderador durante la aprobación (RF15).
-     */
-    @Size(max = 100)
-    private String tipoSugerido;
+    @NotNull(message = "La lista de IDs de Géneros no puede ser nula")
+    private List<Long> generoIdsSugeridos;
 
+    // --- Campo de Multimedia (NUEVO) ---
     /**
-     * Los GÉNEROS que el usuario sugiere (ej. "Aventura, Fantasía, Shonen").
-     * Se almacena como un String simple (separado por comas).
-     * Será "traducido" a entidades 'Genero' por un Moderador (RF15).
+     * URL de la imagen de portada sugerida para el Elemento. (RF13)
      */
-    @Size(max = 255)
-    private String generosSugeridos;
+    private String imagenPortadaUrl; // <--- ¡AÑADIDO AQUÍ!
 
     
     // --- Getters y Setters ---
-    // Necesarios para que Spring/Jackson pueda mapear el JSON
-    // entrante (en una petición POST) a este objeto Java.
 
     public String getTituloSugerido() {
         return tituloSugerido;
@@ -67,19 +54,28 @@ public class PropuestaRequestDTO {
         this.descripcionSugerida = descripcionSugerida;
     }
 
-    public String getTipoSugerido() {
-        return tipoSugerido;
+    public Long getTipoIdSugerido() {
+        return tipoIdSugerido;
     }
 
-    public void setTipoSugerido(String tipoSugerido) {
-        this.tipoSugerido = tipoSugerido;
+    public void setTipoIdSugerido(Long tipoIdSugerido) {
+        this.tipoIdSugerido = tipoIdSugerido;
     }
 
-    public String getGenerosSugeridos() {
-        return generosSugeridos;
+    public List<Long> getGeneroIdsSugeridos() {
+        return generoIdsSugeridos;
     }
 
-    public void setGenerosSugeridos(String generosSugeridos) {
-        this.generosSugeridos = generosSugeridos;
+    public void setGeneroIdsSugeridos(List<Long> generoIdsSugeridos) {
+        this.generoIdsSugeridos = generoIdsSugeridos;
+    }
+
+    // --- Getter y Setter para la URL de la imagen (NUEVO) ---
+    public String getImagenPortadaUrl() {
+        return imagenPortadaUrl;
+    }
+
+    public void setImagenPortadaUrl(String imagenPortadaUrl) {
+        this.imagenPortadaUrl = imagenPortadaUrl;
     }
 }

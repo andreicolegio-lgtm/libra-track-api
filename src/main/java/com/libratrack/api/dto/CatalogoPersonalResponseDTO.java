@@ -17,7 +17,8 @@ public class CatalogoPersonalResponseDTO {
     
     // Datos "planos" de las relaciones
     private Long elementoId;
-    private String elementoTitulo;
+    private String elementoTitulo; 
+    private String elementoImagenPortadaUrl; // ¡NUEVO CAMPO!
     private Long usuarioId;
 
     // --- Constructor ---
@@ -28,7 +29,8 @@ public class CatalogoPersonalResponseDTO {
         this.progresoEspecifico = entrada.getProgresoEspecifico();
         this.agregadoEn = entrada.getAgregadoEn();
         this.elementoId = entrada.getElemento().getId();
-        this.elementoTitulo = entrada.getElemento().getTitulo(); // Damos también el título
+        this.elementoTitulo = entrada.getElemento().getTitulo();
+        this.elementoImagenPortadaUrl = entrada.getElemento().getImagenPortadaUrl(); // ¡Mapeo de la URL!
         this.usuarioId = entrada.getUsuario().getId();
     }
 
@@ -41,5 +43,6 @@ public class CatalogoPersonalResponseDTO {
     public LocalDateTime getAgregadoEn() { return agregadoEn; }
     public Long getElementoId() { return elementoId; }
     public String getElementoTitulo() { return elementoTitulo; }
+    public String getElementoImagenPortadaUrl() { return elementoImagenPortadaUrl; } // ¡Nuevo Getter!
     public Long getUsuarioId() { return usuarioId; }
 }
