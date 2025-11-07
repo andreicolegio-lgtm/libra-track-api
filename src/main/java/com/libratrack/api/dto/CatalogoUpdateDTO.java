@@ -1,38 +1,29 @@
 package com.libratrack.api.dto;
 
-import com.libratrack.api.model.EstadoPersonal; // Importa el Enum de estado
-import jakarta.validation.constraints.Size; // Import para validación de tamaño
+import com.libratrack.api.model.EstadoPersonal;
+import jakarta.validation.constraints.Min;
 
 /**
- * DTO (Data Transfer Object) para la petición de ACTUALIZAR
- * una entrada en el catálogo personal.
- *
- * Este "molde" define el JSON que la app móvil debe enviar
- * (vía un 'PUT') para cumplir con los requisitos RF06 y RF07.
- *
- * Nota: Los campos aquí son 'Optional' (no marcados con @NotNull)
- * porque el usuario puede querer actualizar solo el estado,
- * solo el progreso, o ambos a la vez. El servicio manejará esta lógica.
+ * DTO para la petición de ACTUALIZAR una entrada en el catálogo personal (RF06, RF07).
+ * (Progreso detallado)
  */
 public class CatalogoUpdateDTO {
 
-    /**
-     * El nuevo estado que el usuario quiere asignar (RF06).
-     * (Ej: PENDIENTE, EN_PROGRESO, TERMINADO, ABANDONADO)
-     */
     private EstadoPersonal estadoPersonal;
 
     /**
-     * El nuevo texto de progreso que el usuario quiere registrar (RF07).
-     * (Ej: "T4:E3", "Cap. 7")
+     * Nueva temporada actual del progreso (para Series/Anime).
      */
-    @Size(max = 100, message = "El progreso no puede exceder los 100 caracteres")
-    private String progresoEspecifico;
+    @Min(value = 1, message = "La temporada mínima es 1")
+    private Integer temporadaActual; 
 
+    /**
+     * Nuevo episodio/capítulo/página actual del progreso.
+     */
+    @Min(value = 0, message = "La unidad mínima es 0 (antes de empezar)")
+    private Integer unidadActual;
     
     // --- Getters y Setters ---
-    // Necesarios para que Spring/Jackson pueda mapear el JSON
-    // entrante a este objeto.
 
     public EstadoPersonal getEstadoPersonal() {
         return estadoPersonal;
@@ -42,11 +33,19 @@ public class CatalogoUpdateDTO {
         this.estadoPersonal = estadoPersonal;
     }
 
-    public String getProgresoEspecifico() {
-        return progresoEspecifico;
+    public Integer getTemporadaActual() {
+        return temporadaActual;
     }
 
-    public void setProgresoEspecifico(String progresoEspecifico) {
-        this.progresoEspecifico = progresoEspecifico;
+    public void setTemporadaActual(Integer temporadaActual) {
+        this.temporadaActual = temporadaActual;
+    }
+
+    public Integer getUnidadActual() {
+        return unidadActual;
+    }
+
+    public void setUnidadActual(Integer unidadActual) {
+        this.unidadActual = unidadActual;
     }
 }

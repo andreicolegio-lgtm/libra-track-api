@@ -1,12 +1,13 @@
 package com.libratrack.api.service;
 
-import com.libratrack.api.dto.ElementoDTO; 
+import com.libratrack.api.dto.ElementoDTO;
 import com.libratrack.api.dto.ElementoResponseDTO;
 import com.libratrack.api.entity.Elemento;
 import com.libratrack.api.entity.Genero;
 import com.libratrack.api.entity.Tipo;
 import com.libratrack.api.entity.Usuario;
-import com.libratrack.api.model.EstadoContenido; 
+import com.libratrack.api.model.EstadoContenido;
+import com.libratrack.api.model.EstadoPublicacion;
 import com.libratrack.api.repository.ElementoRepository;
 import com.libratrack.api.repository.GeneroRepository;
 import com.libratrack.api.repository.TipoRepository;
@@ -26,7 +27,7 @@ import java.util.stream.Collectors;
  */
 @Service
 public class ElementoService {
-
+    
     @Autowired
     private ElementoRepository elementoRepository;
     
@@ -39,10 +40,14 @@ public class ElementoService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    // ... (createElemento sin cambios) ...
-
-    @Transactional 
+    /**
+     * Lógica de negocio para crear un nuevo Elemento (RF15).
+     * CORREGIDO: Se usan los setters correctos 'setUrlImagen' y 'setFechaLanzamiento'.
+     */
+    @Transactional
     public ElementoResponseDTO createElemento(ElementoDTO dto) throws Exception {
+        
+        // 1. "Traducir" IDs a Entidades
         Tipo tipo = tipoRepository.findById(dto.getTipoId())
                 .orElseThrow(() -> new Exception("Tipo no encontrado con id: " + dto.getTipoId()));
 
@@ -54,41 +59,45 @@ public class ElementoService {
             throw new Exception("Uno o más IDs de Género no son válidos o la lista está vacía.");
         }
 
+        // 2. Mapear DTO a la nueva entidad
         Elemento nuevoElemento = new Elemento();
         nuevoElemento.setTitulo(dto.getTitulo());
         nuevoElemento.setDescripcion(dto.getDescripcion());
-        nuevoElemento.setFechaLanzamiento(dto.getFechaLanzamiento());
-        nuevoElemento.setImagenPortadaUrl(dto.getImagenPortadaUrl());
         
+        // CORREGIDO: Usar los getters del DTO (110-NNNNNN)
+        nuevoElemento.setFechaLanzamiento(dto.getFechaLanzamiento()); 
+        nuevoElemento.setUrlImagen(dto.getUrlImagen()); // <-- CORREGIDO
+        
+        // 3. Establecer relaciones
         nuevoElemento.setTipo(tipo);
         nuevoElemento.setGeneros(generos);
         nuevoElemento.setCreador(creador); 
+        
+        // 4. Establecer estado (RF16)
         nuevoElemento.setEstadoContenido(EstadoContenido.COMUNITARIO);
+        
+        // 5. Establecer estado de publicación (Punto 11)
+        nuevoElemento.setEstadoPublicacion(EstadoPublicacion.DISPONIBLE); 
 
+        // 6. Guardar
         Elemento elementoGuardado = elementoRepository.save(nuevoElemento);
         
         return new ElementoResponseDTO(elementoGuardado);
     }
 
     /**
-     * REFACTORIZADO: Busca todos los elementos o filtra por 3 criterios (RF09).
-     * * @param searchText El término de búsqueda opcional (por título).
-     * @param tipoName El nombre del Tipo para filtrar (ej. "Serie").
-     * @param generoName El nombre del Género para filtrar (ej. "Fantasía").
-     * @return Una lista de DTOs de los Elementos que cumplen con los criterios.
+     * Busca todos los elementos o filtra por 3 criterios (RF09).
      */
     public List<ElementoResponseDTO> findAllElementos(String searchText, String tipoName, String generoName) {
         
-        // 1. Obtener TODOS los elementos de forma inicial
         List<Elemento> elementos = elementoRepository.findAll();
         if (elementos.isEmpty()) {
              return List.of();
         }
         
-        // 2. Aplicar los 3 filtros secuencialmente (AND lógico)
         List<Elemento> elementosFiltrados = elementos.stream()
             
-            // Filtro 1: Búsqueda por Título (searchText)
+            // Filtro 1: Búsqueda por Título
             .filter(e -> {
                 if (searchText != null && !searchText.isBlank()) {
                     return e.getTitulo().toLowerCase().contains(searchText.toLowerCase());
@@ -96,7 +105,7 @@ public class ElementoService {
                 return true;
             })
             
-            // Filtro 2: Por Tipo (tipoName)
+            // Filtro 2: Por Tipo
             .filter(e -> {
                 if (tipoName != null && !tipoName.isBlank() && e.getTipo() != null) {
                     return e.getTipo().getNombre().equalsIgnoreCase(tipoName);
@@ -104,10 +113,9 @@ public class ElementoService {
                 return true;
             })
             
-            // Filtro 3: Por Género (generoName)
+            // Filtro 3: Por Género
             .filter(e -> {
                 if (generoName != null && !generoName.isBlank() && e.getGeneros() != null) {
-                    // Comprueba si CUALQUIERA de los géneros del Elemento coincide
                     return e.getGeneros().stream()
                             .anyMatch(g -> g.getNombre().equalsIgnoreCase(generoName));
                 }
@@ -116,7 +124,6 @@ public class ElementoService {
             
             .collect(Collectors.toList());
 
-        // 3. Mapea la lista filtrada de Entidades a una lista de DTOs
         return elementosFiltrados.stream()
                 .map(ElementoResponseDTO::new)
                 .collect(Collectors.toList());
@@ -124,7 +131,6 @@ public class ElementoService {
 
     /**
      * Busca un elemento por su ID (RF10 - Ficha Detallada).
-     * [Preservado]
      */
     public Optional<ElementoResponseDTO> findElementoById(Long id) {
         Optional<Elemento> elementoOptional = elementoRepository.findById(id);

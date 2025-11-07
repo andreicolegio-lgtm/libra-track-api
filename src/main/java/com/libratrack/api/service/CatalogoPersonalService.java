@@ -10,16 +10,13 @@ import com.libratrack.api.repository.ElementoRepository;
 import com.libratrack.api.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional; // Importado
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * (Refactorizado por Seguridad)
- * Servicio para la lógica de negocio del catálogo personal.
- * Todos los métodos ahora aceptan un 'username' (del token JWT)
- * en lugar de un 'usuarioId' (inseguro), para asegurar que
- * un usuario solo pueda modificar su propio catálogo.
+ * Servicio para la lógica de negocio del catálogo personal (RF05-RF08).
  */
 @Service
 public class CatalogoPersonalService {
@@ -35,16 +32,11 @@ public class CatalogoPersonalService {
 
     /**
      * Obtiene todas las entradas del catálogo de un usuario (RF08).
-     *
-     * @param username El 'username' del usuario (obtenido del token).
-     * @return Una lista de DTOs de las entradas del catálogo de ese usuario.
      */
     public List<CatalogoPersonalResponseDTO> getCatalogoByUsername(String username) {
-        // 1. Busca las entidades en la base de datos
-        // (El repositorio debe ser actualizado para buscar por username)
+        // Asumimos que el repositorio tiene este método
         List<CatalogoPersonal> catalogo = catalogoRepo.findByUsuario_Username(username);
         
-        // 2. Mapea la lista de Entidades a una lista de DTOs
         return catalogo.stream()
                 .map(CatalogoPersonalResponseDTO::new)
                 .collect(Collectors.toList());
@@ -52,30 +44,23 @@ public class CatalogoPersonalService {
 
     /**
      * Añade un elemento al catálogo personal de un usuario (RF05).
-     *
-     * @param username El 'username' del usuario (del token JWT).
-     * @param elementoId El ID del elemento a añadir (de la URL).
-     * @return El DTO de la nueva entrada del catálogo creada.
      */
+    @Transactional // Añadido por seguridad
     public CatalogoPersonalResponseDTO addElementoAlCatalogo(String username, Long elementoId) throws Exception {
         
-        // 1. Verificación de Entidades:
-        // Buscamos al usuario por 'username' para obtener la entidad completa
         Usuario usuario = usuarioRepo.findByUsername(username)
                 .orElseThrow(() -> new Exception("Usuario no encontrado."));
         Elemento elemento = elementoRepo.findById(elementoId)
                 .orElseThrow(() -> new Exception("Elemento no encontrado."));
 
-        // 2. Validación: Verificar si el elemento ya está en el catálogo
-        // (Usamos los IDs de las entidades que encontramos)
         if (catalogoRepo.findByUsuarioIdAndElementoId(usuario.getId(), elemento.getId()).isPresent()) {
             throw new Exception("Este elemento ya está en tu catálogo.");
         }
 
-        // 3. Crear la nueva entrada del catálogo
         CatalogoPersonal nuevaEntrada = new CatalogoPersonal();
         nuevaEntrada.setUsuario(usuario);
         nuevaEntrada.setElemento(elemento);
+        // El estado y progreso por defecto se asignan en la entidad
 
         CatalogoPersonal entradaGuardada = catalogoRepo.save(nuevaEntrada);
         
@@ -85,15 +70,13 @@ public class CatalogoPersonalService {
     /**
      * Actualiza el estado y/o el progreso de un elemento en el catálogo (RF06, RF07).
      *
-     * @param username El 'username' del usuario (del token JWT).
-     * @param elementoId El ID del elemento (de la URL).
-     * @param dto El DTO (CatalogoUpdateDTO) con los datos a actualizar.
-     * @return El DTO de la entrada del catálogo ya actualizada.
+     * CORREGIDO: Este método ahora usa getTemporadaActual() y getUnidadActual()
+     * en lugar del obsoleto getProgresoEspecifico().
      */
+    @Transactional
     public CatalogoPersonalResponseDTO updateEntradaCatalogo(String username, Long elementoId, CatalogoUpdateDTO dto) throws Exception {
         
         // 1. Buscar la entrada específica que se quiere actualizar
-        // (Usamos el repositorio para buscar por username y elementoId)
         CatalogoPersonal entrada = catalogoRepo.findByUsuario_UsernameAndElemento_Id(username, elementoId)
                 .orElseThrow(() -> new Exception("Este elemento no está en tu catálogo."));
 
@@ -101,8 +84,15 @@ public class CatalogoPersonalService {
         if (dto.getEstadoPersonal() != null) {
             entrada.setEstadoPersonal(dto.getEstadoPersonal()); // RF06
         }
-        if (dto.getProgresoEspecifico() != null) {
-            entrada.setProgresoEspecifico(dto.getProgresoEspecifico()); // RF07
+        
+        // --- LÓGICA DE PROGRESO DETALLADO (Punto 6) ---
+        // CORREGIDO: Usa los getters del DTO de 110-MMMMMM
+        if (dto.getTemporadaActual() != null) {
+            entrada.setTemporadaActual(dto.getTemporadaActual());
+        }
+        
+        if (dto.getUnidadActual() != null) {
+            entrada.setUnidadActual(dto.getUnidadActual());
         }
 
         CatalogoPersonal entradaGuardada = catalogoRepo.save(entrada);
@@ -112,17 +102,13 @@ public class CatalogoPersonalService {
 
     /**
      * Elimina un elemento del catálogo personal de un usuario.
-     *
-     * @param username El 'username' del usuario (del token JWT).
-     * @param elementoId El ID del elemento (de la URL).
      */
+    @Transactional // Añadido por seguridad
     public void removeElementoDelCatalogo(String username, Long elementoId) throws Exception {
         
-        // 1. Buscar la entrada que se quiere eliminar
         CatalogoPersonal entrada = catalogoRepo.findByUsuario_UsernameAndElemento_Id(username, elementoId)
                 .orElseThrow(() -> new Exception("Este elemento no está en tu catálogo."));
         
-        // 2. Borrarla
         catalogoRepo.delete(entrada);
     }
 }
