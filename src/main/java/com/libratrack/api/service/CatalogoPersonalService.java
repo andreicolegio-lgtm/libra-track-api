@@ -1,3 +1,4 @@
+// Archivo: src/main/java/com/libratrack/api/service/CatalogoPersonalService.java
 package com.libratrack.api.service;
 
 import com.libratrack.api.dto.CatalogoPersonalResponseDTO;
@@ -5,18 +6,21 @@ import com.libratrack.api.dto.CatalogoUpdateDTO;
 import com.libratrack.api.entity.CatalogoPersonal;
 import com.libratrack.api.entity.Elemento;
 import com.libratrack.api.entity.Usuario;
+import com.libratrack.api.exception.ConflictException; // NUEVA IMPORTACIÓN
+import com.libratrack.api.exception.ResourceNotFoundException; // NUEVA IMPORTACIÓN
 import com.libratrack.api.repository.CatalogoPersonalRepository;
 import com.libratrack.api.repository.ElementoRepository;
 import com.libratrack.api.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional; // Importado
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
  * Servicio para la lógica de negocio del catálogo personal (RF05-RF08).
+ * REFACTORIZADO: Usa excepciones de negocio (ResourceNotFound/Conflict).
  */
 @Service
 public class CatalogoPersonalService {
@@ -34,7 +38,7 @@ public class CatalogoPersonalService {
      * Obtiene todas las entradas del catálogo de un usuario (RF08).
      */
     public List<CatalogoPersonalResponseDTO> getCatalogoByUsername(String username) {
-        // Asumimos que el repositorio tiene este método
+        // ... (sin cambios, solo recuperación de datos)
         List<CatalogoPersonal> catalogo = catalogoRepo.findByUsuario_Username(username);
         
         return catalogo.stream()
@@ -45,22 +49,21 @@ public class CatalogoPersonalService {
     /**
      * Añade un elemento al catálogo personal de un usuario (RF05).
      */
-    @Transactional // Añadido por seguridad
-    public CatalogoPersonalResponseDTO addElementoAlCatalogo(String username, Long elementoId) throws Exception {
+    @Transactional
+    public CatalogoPersonalResponseDTO addElementoAlCatalogo(String username, Long elementoId) { // Eliminamos 'throws Exception'
         
         Usuario usuario = usuarioRepo.findByUsername(username)
-                .orElseThrow(() -> new Exception("Usuario no encontrado."));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado.")); // <-- 404
         Elemento elemento = elementoRepo.findById(elementoId)
-                .orElseThrow(() -> new Exception("Elemento no encontrado."));
+                .orElseThrow(() -> new ResourceNotFoundException("Elemento no encontrado con id: " + elementoId)); // <-- 404
 
         if (catalogoRepo.findByUsuarioIdAndElementoId(usuario.getId(), elemento.getId()).isPresent()) {
-            throw new Exception("Este elemento ya está en tu catálogo.");
+            throw new ConflictException("Este elemento ya está en tu catálogo."); // <-- 409
         }
 
         CatalogoPersonal nuevaEntrada = new CatalogoPersonal();
         nuevaEntrada.setUsuario(usuario);
         nuevaEntrada.setElemento(elemento);
-        // El estado y progreso por defecto se asignan en la entidad
 
         CatalogoPersonal entradaGuardada = catalogoRepo.save(nuevaEntrada);
         
@@ -69,24 +72,19 @@ public class CatalogoPersonalService {
 
     /**
      * Actualiza el estado y/o el progreso de un elemento en el catálogo (RF06, RF07).
-     *
-     * CORREGIDO: Este método ahora usa getTemporadaActual() y getUnidadActual()
-     * en lugar del obsoleto getProgresoEspecifico().
      */
     @Transactional
-    public CatalogoPersonalResponseDTO updateEntradaCatalogo(String username, Long elementoId, CatalogoUpdateDTO dto) throws Exception {
+    public CatalogoPersonalResponseDTO updateEntradaCatalogo(String username, Long elementoId, CatalogoUpdateDTO dto) { // Eliminamos 'throws Exception'
         
         // 1. Buscar la entrada específica que se quiere actualizar
         CatalogoPersonal entrada = catalogoRepo.findByUsuario_UsernameAndElemento_Id(username, elementoId)
-                .orElseThrow(() -> new Exception("Este elemento no está en tu catálogo."));
+                .orElseThrow(() -> new ResourceNotFoundException("Este elemento no está en tu catálogo (Elemento ID: " + elementoId + ").")); // <-- 404
 
         // 2. Actualizar los campos
         if (dto.getEstadoPersonal() != null) {
-            entrada.setEstadoPersonal(dto.getEstadoPersonal()); // RF06
+            entrada.setEstadoPersonal(dto.getEstadoPersonal());
         }
         
-        // --- LÓGICA DE PROGRESO DETALLADO (Punto 6) ---
-        // CORREGIDO: Usa los getters del DTO de 110-MMMMMM
         if (dto.getTemporadaActual() != null) {
             entrada.setTemporadaActual(dto.getTemporadaActual());
         }
@@ -103,11 +101,11 @@ public class CatalogoPersonalService {
     /**
      * Elimina un elemento del catálogo personal de un usuario.
      */
-    @Transactional // Añadido por seguridad
-    public void removeElementoDelCatalogo(String username, Long elementoId) throws Exception {
+    @Transactional
+    public void removeElementoDelCatalogo(String username, Long elementoId) { // Eliminamos 'throws Exception'
         
         CatalogoPersonal entrada = catalogoRepo.findByUsuario_UsernameAndElemento_Id(username, elementoId)
-                .orElseThrow(() -> new Exception("Este elemento no está en tu catálogo."));
+                .orElseThrow(() -> new ResourceNotFoundException("Este elemento no está en tu catálogo (Elemento ID: " + elementoId + ").")); // <-- 404
         
         catalogoRepo.delete(entrada);
     }

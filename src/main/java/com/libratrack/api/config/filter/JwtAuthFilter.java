@@ -14,6 +14,9 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 
 /**
@@ -26,6 +29,8 @@ import java.io.IOException;
 @Component // Le dice a Spring que esta es una clase gestionada (un "Bean")
 public class JwtAuthFilter extends OncePerRequestFilter {
 
+    private static final Logger logger = LoggerFactory.getLogger(JwtAuthFilter.class);
+
     @Autowired
     private JwtService jwtService; // El servicio que sabe leer tokens
 
@@ -37,32 +42,34 @@ public class JwtAuthFilter extends OncePerRequestFilter {
      */
     @Override
     protected void doFilterInternal(
-            HttpServletRequest request, 
-            HttpServletResponse response, 
+            HttpServletRequest request,
+            HttpServletResponse response,
             FilterChain filterChain)
             throws ServletException, IOException {
 
-        // 1. Extraer la cabecera "Authorization"
-        // (La cabecera debe lucir así: "Bearer eyJhbGciOiJIUzI1NiJ9...")
         final String authHeader = request.getHeader("Authorization");
         final String token;
         final String username;
 
+        // 1. Extraer la cabecera "Authorization"
+        // (La cabecera debe lucir así: "Bearer eyJhbGciOiJIUzI1NiJ9...")
         // 2. Comprobar si la cabecera es válida y es un token "Bearer"
         // Si no hay cabecera, o no empieza con "Bearer ", ignoramos el filtro
         // y continuamos (Spring Security lo bloqueará después por ser 'anyRequest().authenticated()')
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            logger.debug("Authorization header is missing or does not start with 'Bearer '");
             filterChain.doFilter(request, response); // Continúa al siguiente filtro
             return; // Termina la ejecución de este filtro
         }
 
         // 3. Extraer el token (quitando el prefijo "Bearer ")
         token = authHeader.substring(7);
-        
+
         try {
             // 4. Extraer el 'username' del token usando el JwtService
             username = jwtService.extractUsername(token);
         } catch (Exception e) {
+            logger.warn("Failed to extract username from token: {}", e.getMessage());
             // Si el token está caducado o la firma es incorrecta,
             // el 'username' será nulo y la validación fallará.
             // (Opcional: registrar el error 'e.getMessage()')
@@ -97,6 +104,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 // Spring Security ahora "sabe" que este usuario está logueado
                 // para esta petición.
                 SecurityContextHolder.getContext().setAuthentication(authToken);
+                logger.info("Authentication successful for user: {}", username);
+            } else {
+                logger.warn("Token validation failed for user: {}", username);
             }
         }
         

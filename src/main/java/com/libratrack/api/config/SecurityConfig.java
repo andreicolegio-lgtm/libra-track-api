@@ -24,6 +24,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import static org.springframework.security.config.Customizer.withDefaults; // Import para .cors(withDefaults())
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Configuración central de Spring Security.
@@ -34,6 +36,8 @@ import static org.springframework.security.config.Customizer.withDefaults; // Im
 @EnableWebSecurity // Activa la seguridad web de Spring
 @EnableMethodSecurity // Activa la seguridad a nivel de método (ej. @PreAuthorize)
 public class SecurityConfig {
+
+    private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
 
     // --- Inyección de Dependencias ---
     // Inyectamos nuestro filtro JWT y nuestro servicio de detalles de usuario
@@ -93,7 +97,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         // Permite peticiones de cualquier origen (inseguro para producción,
         // pero necesario para el desarrollo con emuladores).
-        configuration.setAllowedOrigins(Arrays.asList("*")); 
+        configuration.setAllowedOrigins(Arrays.asList("*")); // Restrict this in production
         // Permite los métodos HTTP estándar que usará nuestra API
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         // Permite las cabeceras necesarias (Authorization para el token JWT)
@@ -150,12 +154,7 @@ public class SecurityConfig {
             // Esto asegura que interceptemos y validemos el token en cada petición.
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-        System.out.println(" ");
-        System.out.println("************************************************************");
-        System.out.println(">>> MI SecurityConfig SÍ SE ESTÁ CARGANDO. /api/auth/ ES PÚBLICO.");
-        System.out.println("************************************************************");
-        System.out.println(" ");
-
+        logger.info("SecurityConfig loaded successfully. Public routes: /api/auth/login, /api/auth/register");
         return http.build();
     }
 }
