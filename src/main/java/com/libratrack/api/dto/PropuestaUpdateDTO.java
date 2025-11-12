@@ -4,50 +4,37 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.Min;
 
-/**
- * DTO para RECIBIR las ediciones de un Moderador ANTES de aprobar
- * una propuesta (Implementa la petición 'd' del Sprint 2).
- * --- ¡ACTUALIZADO (Sprint 2 / V2)! ---
- */
 public class PropuestaUpdateDTO {
 
-    // --- Campos Editables ---
+    // ... (Campos existentes: titulo, desc, tipo, generos ... sin cambios) ...
     @NotBlank
     @Size(max = 255)
     private String tituloSugerido;
-
     @NotBlank
     @Size(max = 5000)
     private String descripcionSugerida;
-    
     @NotBlank
     private String tipoSugerido; 
-    
     @NotBlank
     private String generosSugeridos; 
+
+    // --- ¡NUEVO CAMPO AÑADIDO! (Petición 6) ---
+    @Size(max = 255) // Para la URL de GCS
+    private String urlImagen;
     
-    // --- ¡CAMPOS DE PROGRESO REFACTORIZADOS! (Petición b, c, d) ---
-    
+    // --- Campos de Progreso (Refactorizados) ---
     @Size(max = 255)
-    private String episodiosPorTemporada; // Para Series (ej. "10,8,12")
-
+    private String episodiosPorTemporada; 
     @Min(value = 1)
-    private Integer totalUnidades; // Para Anime / Manga
-
+    private Integer totalUnidades; 
     @Min(value = 1)
-    private Integer totalCapitulosLibro; // Para Libros
-
+    private Integer totalCapitulosLibro; 
     @Min(value = 1)
-    private Integer totalPaginasLibro; // Para Libros
-
-    // --- CAMPOS ANTIGUOS (ELIMINADOS) ---
-    // private Integer totalTemporadas;
-    // private Boolean esUnidadUnica;
-    // private Integer totalCapitulos;
-    // private Integer totalPaginas;
+    private Integer totalPaginasLibro; 
 
     // --- Getters y Setters ---
-
+    
+    // ... (Getters/Setters existentes ... sin cambios) ...
     public String getTituloSugerido() { return tituloSugerido; }
     public void setTituloSugerido(String tituloSugerido) { this.tituloSugerido = tituloSugerido; }
     public String getDescripcionSugerida() { return descripcionSugerida; }
@@ -57,6 +44,11 @@ public class PropuestaUpdateDTO {
     public String getGenerosSugeridos() { return generosSugeridos; }
     public void setGenerosSugeridos(String generosSugeridos) { this.generosSugeridos = generosSugeridos; }
     
+    // --- ¡NUEVO GETTER/SETTER AÑADIDO! ---
+    public String getUrlImagen() { return urlImagen; }
+    public void setUrlImagen(String urlImagen) { this.urlImagen = urlImagen; }
+
+    // ... (Getters/Setters de Progreso ... sin cambios) ...
     public String getEpisodiosPorTemporada() { return episodiosPorTemporada; }
     public void setEpisodiosPorTemporada(String episodiosPorTemporada) { this.episodiosPorTemporada = episodiosPorTemporada; }
     public Integer getTotalUnidades() { return totalUnidades; }

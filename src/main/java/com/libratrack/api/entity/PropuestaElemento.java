@@ -6,10 +6,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 
-/**
- * Entidad que representa la tabla 'propuestas_elementos'.
- * --- ¡ACTUALIZADO (Sprint 2 / V2)! ---
- */
 @Entity
 @Table(name = "propuestas_elementos")
 public class PropuestaElemento {
@@ -42,19 +38,17 @@ public class PropuestaElemento {
 
     @Size(max = 255)
     private String generosSugeridos;
+    
+    // --- ¡NUEVO CAMPO AÑADIDO! (Petición 6) ---
+    @Column(length = 255)
+    private String urlImagen;
 
-    // --- ¡CAMPOS DE PROGRESO TOTAL REFACTORIZADOS! (Petición b, c, d) ---
+    // --- Campos de Progreso (Refactorizados) ---
     @Column(length = 255)
     private String episodiosPorTemporada; // Para Series
     private Integer totalUnidades;        // Para Anime / Manga
     private Integer totalCapitulosLibro;  // Para Libros
     private Integer totalPaginasLibro;    // Para Libros
-
-    // --- CAMPOS ANTIGUOS (ELIMINADOS) ---
-    // private Integer totalTemporadas;
-    // private Boolean esUnidadUnica;
-    // private Integer totalCapitulos;
-    // private Integer totalPaginas;
 
     // ... (Estado de Moderación ... sin cambios) ...
     @Enumerated(EnumType.STRING)
@@ -71,18 +65,16 @@ public class PropuestaElemento {
     }
 
     public PropuestaElemento() {
-        // Constructor vacío requerido por JPA
+        // Constructor vacío
     }
 
     // --- Getters y Setters ---
     
-    // ... (Getters/Setters básicos: id, titulo, desc, etc. sin cambios) ...
+    // ... (Getters/Setters básicos ... sin cambios) ...
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public Usuario getProponente() { return proponente; }
     public void setProponente(Usuario proponente) { this.proponente = proponente; }
-    public Usuario getRevisor() { return revisor; }
-    public void setRevisor(Usuario revisor) { this.revisor = revisor; }
     public String getTituloSugerido() { return tituloSugerido; }
     public void setTituloSugerido(String tituloSugerido) { this.tituloSugerido = tituloSugerido; }
     public String getDescripcionSugerida() { return descripcionSugerida; }
@@ -93,10 +85,16 @@ public class PropuestaElemento {
     public void setGenerosSugeridos(String generosSugeridos) { this.generosSugeridos = generosSugeridos; }
     public EstadoPropuesta getEstadoPropuesta() { return estadoPropuesta; }
     public void setEstadoPropuesta(EstadoPropuesta estadoPropuesta) { this.estadoPropuesta = estadoPropuesta; }
+    public Usuario getRevisor() { return revisor; }
+    public void setRevisor(Usuario revisor) { this.revisor = revisor; }
     public String getComentariosRevision() { return comentariosRevision; }
     public void setComentariosRevision(String comentariosRevision) { this.comentariosRevision = comentariosRevision; }
     public LocalDateTime getFechaPropuesta() { return fechaPropuesta; }
     public void setFechaPropuesta(LocalDateTime fechaPropuesta) { this.fechaPropuesta = fechaPropuesta; }
+
+    // --- ¡NUEVO GETTER/SETTER AÑADIDO! ---
+    public String getUrlImagen() { return urlImagen; }
+    public void setUrlImagen(String urlImagen) { this.urlImagen = urlImagen; }
 
     // --- Getters y Setters de Progreso (Refactorizados) ---
     public String getEpisodiosPorTemporada() { return episodiosPorTemporada; }

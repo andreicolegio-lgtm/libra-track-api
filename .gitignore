@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# --- ¡LÍNEA AÑADIDA! ---
+# Ignorar credenciales de Google Cloud
+gcs-credentials.json

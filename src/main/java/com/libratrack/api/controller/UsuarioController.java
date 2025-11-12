@@ -9,13 +9,13 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*; // Asegúrate de que GetMapping esté importado
+import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.Map; // <-- ¡NUEVA IMPORTACIÓN!
 
 /**
- * Controlador REST para gestionar las operaciones del perfil de usuario (RF04).
- * REFACTORIZADO: Eliminado try-catch manual.
+ * --- ¡ACTUALIZADO (Sprint 3)! ---
  */
 @RestController
 @RequestMapping("/api/usuarios")
@@ -24,52 +24,58 @@ public class UsuarioController {
     @Autowired
     private UsuarioService usuarioService;
 
-    // --- ¡MÉTODO AÑADIDO! ---
     /**
      * Endpoint para obtener el perfil del usuario autenticado (GET /api/usuarios/me).
-     * Este es el método que faltaba y que el ProfileScreen de Flutter necesita.
      */
     @GetMapping("/me")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UsuarioResponseDTO> getMiPerfil(Principal principal) {
         String username = principal.getName();
-        // El servicio ya tiene la lógica para esto (RF04)
         UsuarioResponseDTO perfil = usuarioService.getMiPerfil(username);
         return ResponseEntity.ok(perfil);
     }
-    // --- FIN DEL MÉTODO AÑADIDO ---
-
 
     /**
      * Endpoint para actualizar el username del usuario (PUT /api/usuarios/me).
-     * REFACTORIZADO: Eliminado try-catch.
      */
     @PutMapping("/me")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UsuarioResponseDTO> updateMiPerfil(Principal principal, @Valid @RequestBody UsuarioUpdateDTO updateDto) {
-        
         String usernameActual = principal.getName();
-        // El servicio lanza 404/409.
         UsuarioResponseDTO perfilActualizado = usuarioService.updateMiPerfil(usernameActual, updateDto);
         return ResponseEntity.ok(perfilActualizado);
     }
 
-    // --- CAMBIO DE CONTRASEÑA (RF04) ---
-
     /**
      * Endpoint para cambiar la contraseña del usuario actual.
-     * REFACTORIZADO: Eliminado try-catch.
      */
     @PutMapping("/me/password")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<String> updateMyPassword(Principal principal, @Valid @RequestBody PasswordChangeDTO passwordDto) {
-        
         String usernameActual = principal.getName();
-        
-        // El servicio lanza 404/409.
         usuarioService.changePassword(usernameActual, passwordDto);
-        
-        // Si no hay excepciones, la contraseña se cambió con éxito
         return ResponseEntity.ok().body("Contraseña actualizada con éxito.");
+    }
+    
+    // --- ¡NUEVO ENDPOINT! (Petición 6) ---
+    /**
+     * Endpoint para actualizar la foto de perfil del usuario.
+     * Recibe un JSON simple: {"url": "https://storage.googleapis.com/..."}
+     */
+    @PutMapping("/me/foto")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<UsuarioResponseDTO> updateFotoPerfil(
+            Principal principal, 
+            @RequestBody Map<String, String> body) {
+        
+        String username = principal.getName();
+        String fotoUrl = body.get("url");
+        
+        if (fotoUrl == null || fotoUrl.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        UsuarioResponseDTO perfilActualizado = usuarioService.updateFotoPerfil(username, fotoUrl);
+        return ResponseEntity.ok(perfilActualizado);
     }
 }

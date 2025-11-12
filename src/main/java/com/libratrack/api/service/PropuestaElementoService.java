@@ -15,70 +15,54 @@ import com.libratrack.api.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; 
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * Servicio para la lógica de negocio de la cola de moderación.
- * --- ¡ACTUALIZADO (Sprint 2 / V2)! ---
- */
 @Service
 public class PropuestaElementoService {
 
+    // ... (Inyecciones sin cambios) ...
     @Autowired private PropuestaElementoRepository propuestaRepo;
     @Autowired private UsuarioRepository usuarioRepo;
     @Autowired private ElementoRepository elementoRepo;
     @Autowired private TipoRepository tipoRepository;
     @Autowired private GeneroRepository generoRepository;
 
-    /**
-     * Crea una nueva propuesta y la añade a la cola de moderación (RF13).
-     * --- ¡ACTUALIZADO (Sprint 2 / V2)! ---
-     */
     @Transactional
     public PropuestaResponseDTO createPropuesta(PropuestaRequestDTO dto, String proponenteUsername) { 
+        // ... (código sin cambios) ...
         Usuario proponente = usuarioRepo.findByUsername(proponenteUsername)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario proponente no encontrado.")); 
-        
         PropuestaElemento nuevaPropuesta = new PropuestaElemento();
         nuevaPropuesta.setProponente(proponente);
         nuevaPropuesta.setTituloSugerido(dto.getTituloSugerido());
         nuevaPropuesta.setDescripcionSugerida(dto.getDescripcionSugerida());
         nuevaPropuesta.setTipoSugerido(dto.getTipoSugerido());
         nuevaPropuesta.setGenerosSugeridos(dto.getGenerosSugeridos());
-        
-        // --- ¡CAMPOS DE PROGRESO REFACTORIZADOS! ---
         nuevaPropuesta.setEpisodiosPorTemporada(dto.getEpisodiosPorTemporada());
         nuevaPropuesta.setTotalUnidades(dto.getTotalUnidades());
         nuevaPropuesta.setTotalCapitulosLibro(dto.getTotalCapitulosLibro());
         nuevaPropuesta.setTotalPaginasLibro(dto.getTotalPaginasLibro());
-
+        // (El campo urlImagen es null aquí, lo cual es correcto)
         PropuestaElemento propuestaGuardada = propuestaRepo.save(nuevaPropuesta);
-        
         return new PropuestaResponseDTO(propuestaGuardada);
     }
 
-    /**
-     * Obtiene la lista de propuestas por un estado específico (RF14).
-     */
     @Transactional(readOnly = true) 
     public List<PropuestaResponseDTO> getPropuestasPorEstado(EstadoPropuesta estado) {
+        // ... (código sin cambios) ...
         List<PropuestaElemento> propuestas = propuestaRepo.findByEstadoPropuesta(estado);
         return propuestas.stream()
                 .map(PropuestaResponseDTO::new)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Aprueba una propuesta (RF15).
-     * --- ¡REFACTORIZADO (Sprint 2 / V2)! ---
-     */
     @Transactional
     public ElementoResponseDTO aprobarPropuesta(Long propuestaId, Long revisorId, PropuestaUpdateDTO dto) { 
         
+        // ... (validaciones de revisor, propuesta, estado, tipos y géneros sin cambios) ...
         Usuario revisor = usuarioRepo.findById(revisorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario revisor no encontrado.")); 
         PropuestaElemento propuesta = propuestaRepo.findById(propuestaId)
@@ -104,8 +88,10 @@ public class PropuestaElementoService {
         nuevoElemento.setEstadoContenido(EstadoContenido.COMUNITARIO);
         nuevoElemento.setEstadoPublicacion(EstadoPublicacion.DISPONIBLE); 
 
-        // --- ¡CAMPOS DE PROGRESO REFACTORIZADOS! ---
-        // Copiamos los datos de progreso total de la Propuesta al Elemento
+        // --- ¡LÍNEA AÑADIDA! (Petición 6) ---
+        nuevoElemento.setUrlImagen(propuesta.getUrlImagen());
+
+        // Copiamos los datos de progreso total
         nuevoElemento.setEpisodiosPorTemporada(propuesta.getEpisodiosPorTemporada());
         nuevoElemento.setTotalUnidades(propuesta.getTotalUnidades());
         nuevoElemento.setTotalCapitulosLibro(propuesta.getTotalCapitulosLibro());
@@ -114,18 +100,17 @@ public class PropuestaElementoService {
         // 7. Actualizar la propuesta como "APROBADA"
         propuesta.setEstadoPropuesta(EstadoPropuesta.APROBADO);
         propuesta.setRevisor(revisor);
-        propuestaRepo.save(propuesta); // Guardamos la propuesta (con campos editados y estado APROBADO)
+        propuestaRepo.save(propuesta); 
 
         // 8. Guardar el nuevo elemento
         Elemento elementoGuardado = elementoRepo.save(nuevoElemento);
         
-        // 9. Devolver el DTO de Respuesta
         return new ElementoResponseDTO(elementoGuardado);
     }
     
     /**
      * Método helper para actualizar una PropuestaElemento con datos de un DTO.
-     * --- ¡ACTUALIZADO (Sprint 2 / V2)! ---
+     * --- ¡ACTUALIZADO (Petición 6)! ---
      */
     private void updatePropuestaFields(PropuestaElemento propuesta, PropuestaUpdateDTO dto) {
         propuesta.setTituloSugerido(dto.getTituloSugerido());
@@ -133,7 +118,10 @@ public class PropuestaElementoService {
         propuesta.setTipoSugerido(dto.getTipoSugerido());
         propuesta.setGenerosSugeridos(dto.getGenerosSugeridos());
         
-        // --- ¡CAMPOS DE PROGRESO REFACTORIZADOS! ---
+        // --- ¡LÍNEA AÑADIDA! (Petición 6) ---
+        propuesta.setUrlImagen(dto.getUrlImagen());
+        
+        // --- Campos de Progreso (Refactorizados) ---
         propuesta.setEpisodiosPorTemporada(dto.getEpisodiosPorTemporada());
         propuesta.setTotalUnidades(dto.getTotalUnidades());
         propuesta.setTotalCapitulosLibro(dto.getTotalCapitulosLibro());
