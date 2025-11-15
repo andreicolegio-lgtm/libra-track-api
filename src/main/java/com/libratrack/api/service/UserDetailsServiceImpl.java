@@ -1,3 +1,4 @@
+// Archivo: src/main/java/com/libratrack/api/service/UserDetailsServiceImpl.java
 package com.libratrack.api.service;
 
 import com.libratrack.api.entity.Usuario;
@@ -16,6 +17,7 @@ import java.util.Set;
 
 /**
  * --- ¡ACTUALIZADO (Sprint 4)! ---
+ * --- ¡ACTUALIZADO (ID: QA-010)! Refactorizado para usar lógica centralizada de roles ---
  */
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
@@ -35,16 +37,17 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         // Rol base para todos
         authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
         
-        // --- ¡LÓGICA DE ROLES ACTUALIZADA! (Petición 13, 16) ---
+        // --- ¡LÓGICA DE ROLES REFACTORIZADA! (ID: QA-010) ---
+        // Se usan los métodos helper de la entidad Usuario
         
         // 2a. Comprobamos si es Administrador
-        if (usuario.getEsAdministrador() != null && usuario.getEsAdministrador()) {
+        if (usuario.esAdmin()) { // <-- REFACTORIZADO
             authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
             // (Petición 16) Un Admin es implícitamente un Moderador
             authorities.add(new SimpleGrantedAuthority("ROLE_MODERADOR")); 
         } 
         // 2b. Si no es Admin, comprobamos si es Moderador
-        else if (usuario.getEsModerador() != null && usuario.getEsModerador()) {
+        else if (usuario.esMod()) { // <-- REFACTORIZADO
             authorities.add(new SimpleGrantedAuthority("ROLE_MODERADOR"));
         }
         

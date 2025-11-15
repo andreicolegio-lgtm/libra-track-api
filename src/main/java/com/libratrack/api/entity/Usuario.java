@@ -1,3 +1,4 @@
+// Archivo: src/main/java/com/libratrack/api/entity/Usuario.java
 package com.libratrack.api.entity;
 
 import jakarta.persistence.*; 
@@ -7,6 +8,7 @@ import jakarta.validation.constraints.Size;
 
 /**
  * --- ¡ACTUALIZADO (Sprint 4)! ---
+ * --- ¡ACTUALIZADO (ID: QA-010)! Se añaden métodos helper de roles ---
  */
 @Entity 
 @Table(name = "usuarios") 
@@ -28,7 +30,7 @@ public class Usuario {
     private String email;
 
     @Column(nullable = false)
-    @NotBlank(message = "La contraseña no puede estar vacía")
+    @NotBlank(message = "La contraseña no puede estar vacío")
     private String password; 
 
     @Column(nullable = false)
@@ -71,4 +73,29 @@ public class Usuario {
     // --- ¡NUEVO GETTER/SETTER! ---
     public Boolean getEsAdministrador() { return esAdministrador; }
     public void setEsAdministrador(Boolean esAdministrador) { this.esAdministrador = esAdministrador; }
+
+
+    // --- ¡MÉTODOS HELPER AÑADIDOS! (ID: QA-010) ---
+    // --- Esta es ahora la "fuente única de la verdad" para los roles ---
+
+    /**
+     * Método helper para comprobar el rol de Administrador (gestiona nulos).
+     */
+    @Transient // Le dice a JPA que no intente mapear esto a una columna
+    public boolean esAdmin() {
+        return this.esAdministrador != null && this.esAdministrador;
+    }
+
+    /**
+     * Método helper para comprobar el rol de Moderador (incluye lógica de Admin).
+     */
+    @Transient // Le dice a JPA que no intente mapear esto a una columna
+    public boolean esMod() {
+        // (Petición 16) Un Admin es implícitamente un Moderador
+        if (esAdmin()) {
+            return true;
+        }
+        // Si no es Admin, comprueba su flag de moderador (gestionando nulos)
+        return this.esModerador != null && this.esModerador;
+    }
 }

@@ -1,3 +1,4 @@
+// Archivo: src/main/java/com/libratrack/api/dto/UsuarioResponseDTO.java
 package com.libratrack.api.dto;
 
 import com.libratrack.api.entity.Usuario;
@@ -5,6 +6,7 @@ import com.libratrack.api.entity.Usuario;
 /**
  * DTO para enviar la información del perfil del usuario al cliente (Flutter).
  * --- ¡ACTUALIZADO (Sprint 4 - Corrección)! ---
+ * --- ¡ACTUALIZADO (ID: QA-010)! Refactorizado para usar lógica centralizada de roles ---
  */
 public class UsuarioResponseDTO {
 
@@ -22,18 +24,10 @@ public class UsuarioResponseDTO {
         this.email = usuario.getEmail();
         this.fotoPerfilUrl = usuario.getFotoPerfilUrl();
         
-        // --- ¡LÓGICA CORREGIDA! ---
-        // (Debe coincidir con la lógica de UserDetailsServiceImpl)
-        
-        // 1. Comprobamos si es Administrador
-        this.esAdministrador = usuario.getEsAdministrador() != null && usuario.getEsAdministrador();
-        
-        // 2. Es Moderador SI es Admin (Petición 16) O si el flag es true
-        if (this.esAdministrador) {
-            this.esModerador = true;
-        } else {
-            this.esModerador = usuario.getEsModerador() != null && usuario.getEsModerador();
-        }
+        // --- ¡LÓGICA CORREGIDA Y CENTRALIZADA! (ID: QA-010) ---
+        // Se usan los métodos helper de la entidad Usuario
+        this.esAdministrador = usuario.esAdmin(); // <-- REFACTORIZADO
+        this.esModerador = usuario.esMod();     // <-- REFACTORIZADO
     }
 
     // --- Getters ---

@@ -41,10 +41,10 @@ public class UsuarioService {
     @Transactional 
     public UsuarioResponseDTO registrarUsuario(Usuario nuevoUsuario) { 
         if (usuarioRepository.existsByUsername(nuevoUsuario.getUsername())) {
-            throw new ConflictException("El nombre de usuario ya existe"); 
+            throw new ConflictException("El nombre de usuario ya existe."); 
         }
         if (usuarioRepository.existsByEmail(nuevoUsuario.getEmail())) {
-            throw new ConflictException("El email ya está registrado"); 
+            throw new ConflictException("El email ya está registrado.");
         }
         String passCifrada = passwordEncoder.encode(nuevoUsuario.getPassword());
         nuevoUsuario.setPassword(passCifrada);
