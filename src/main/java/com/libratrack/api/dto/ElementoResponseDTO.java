@@ -1,3 +1,6 @@
+// Archivo: src/main/java/com/libratrack/api/dto/ElementoResponseDTO.java
+// (¡MODIFICADO POR GEMINI CON LA CORRECCIÓN COMPLETA!)
+
 package com.libratrack.api.dto;
 
 import com.libratrack.api.entity.Elemento;
@@ -8,9 +11,14 @@ import java.time.LocalDate;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+// --- ¡NUEVA IMPORTACIÓN CRUCIAL! ---
+import org.hibernate.Hibernate;
+import java.util.Collections;
+// ---
+
 /**
  * DTO para ENVIAR los datos de un Elemento al cliente (Búsqueda/Detalle).
- * --- ¡ACTUALIZADO (Sprint 2 / V2)! ---
+ * --- ¡ACTUALIZADO (Sprint 10 / Corrección LazyInitialization)! ---
  */
 public class ElementoResponseDTO {
 
@@ -31,34 +39,69 @@ public class ElementoResponseDTO {
     private Integer totalCapitulosLibro;  // Para Libros
     private Integer totalPaginasLibro;    // Para Libros
 
-    // --- CAMPOS ANTIGUOS (ELIMINADOS) ---
-    // private Integer totalTemporadas;
-    // private Boolean esUnidadUnica;
-    // private Integer totalCapitulos;
-    // private Integer totalPaginas;
+    // --- Campos de Relaciones ---
+    private Set<ElementoRelacionDTO> precuelas;
+    private Set<ElementoRelacionDTO> secuelas;
 
 
     public ElementoResponseDTO(Elemento elemento) {
+        
+        // --- Campos Seguros (Primitivos o Enums) ---
         this.id = elemento.getId();
         this.titulo = elemento.getTitulo();
         this.descripcion = elemento.getDescripcion();
         this.urlImagen = elemento.getUrlImagen();
         this.fechaLanzamiento = elemento.getFechaLanzamiento(); 
-        this.tipoNombre = elemento.getTipo().getNombre(); 
         this.estadoContenido = elemento.getEstadoContenido();
-        this.creadorUsername = elemento.getCreador() != null ? elemento.getCreador().getUsername() : "OFICIAL";
-        
-        this.generos = elemento.getGeneros().stream()
-            .map(Genero::getNombre)
-            .collect(Collectors.toSet());
-            
         this.estadoPublicacion = elemento.getEstadoPublicacion();
-        
-        // --- Mapeo de Progreso (Refactorizado) ---
         this.episodiosPorTemporada = elemento.getEpisodiosPorTemporada();
         this.totalUnidades = elemento.getTotalUnidades();
         this.totalCapitulosLibro = elemento.getTotalCapitulosLibro();
         this.totalPaginasLibro = elemento.getTotalPaginasLibro();
+        
+        // --- ¡MAPEO SEGURO DE TODAS LAS RELACIONES LAZY! ---
+        
+        // 1. Cargar Tipo (ManyToOne)
+        if (Hibernate.isInitialized(elemento.getTipo()) && elemento.getTipo() != null) {
+            this.tipoNombre = elemento.getTipo().getNombre();
+        } else {
+            this.tipoNombre = null; // O un valor por defecto si lo prefieres
+        }
+
+        // 2. Cargar Creador (ManyToOne)
+        if (Hibernate.isInitialized(elemento.getCreador()) && elemento.getCreador() != null) {
+            this.creadorUsername = elemento.getCreador().getUsername();
+        } else {
+            this.creadorUsername = "OFICIAL"; // El fallback que ya tenías
+        }
+
+        // 3. Cargar Generos (ManyToMany)
+        if (Hibernate.isInitialized(elemento.getGeneros()) && elemento.getGeneros() != null) {
+            this.generos = elemento.getGeneros().stream()
+                .map(Genero::getNombre)
+                .collect(Collectors.toSet());
+        } else {
+            this.generos = Collections.emptySet();
+        }
+
+        // 4. Cargar Precuelas (ManyToMany)
+        if (Hibernate.isInitialized(elemento.getPrecuelas()) && elemento.getPrecuelas() != null) {
+            this.precuelas = elemento.getPrecuelas().stream()
+                .map(ElementoRelacionDTO::new)
+                .collect(Collectors.toSet());
+        } else {
+            this.precuelas = Collections.emptySet(); 
+        }
+        
+        // 5. Cargar Secuelas (ManyToMany)
+        if (Hibernate.isInitialized(elemento.getSecuelas()) && elemento.getSecuelas() != null) {
+            this.secuelas = elemento.getSecuelas().stream()
+                .map(ElementoRelacionDTO::new)
+                .collect(Collectors.toSet());
+        } else {
+            this.secuelas = Collections.emptySet(); 
+        }
+        // --- FIN DE LA CORRECCIÓN ---
     }
 
     // --- Getters ---
@@ -78,4 +121,8 @@ public class ElementoResponseDTO {
     public Integer getTotalUnidades() { return totalUnidades; }
     public Integer getTotalCapitulosLibro() { return totalCapitulosLibro; }
     public Integer getTotalPaginasLibro() { return totalPaginasLibro; }
+
+    // Getters de Relaciones
+    public Set<ElementoRelacionDTO> getPrecuelas() { return precuelas; }
+    public Set<ElementoRelacionDTO> getSecuelas() { return secuelas; }
 }

@@ -1,3 +1,6 @@
+// Archivo: src/main/java/com/libratrack/api/entity/Elemento.java
+// (¡MODIFICADO POR GEMINI!)
+
 package com.libratrack.api.entity;
 
 import com.libratrack.api.model.EstadoContenido;
@@ -10,6 +13,7 @@ import java.util.Set;
 /**
  * Entidad que representa la tabla 'elementos'.
  * --- ¡ACTUALIZADO (Sprint 2 / V2)! ---
+ * --- ¡ACTUALIZADO (Sprint 10 / Relaciones)! ---
  */
 @Entity
 @Table(name = "elementos")
@@ -58,22 +62,41 @@ public class Elemento {
 
     // --- ¡CAMPOS DE PROGRESO TOTAL REFACTORIZADOS! (Petición b, c, d) ---
     
-    // Para SERIES: "12,12,10" (12 ep en T1, 12 en T2, 10 en T3)
+    // ... (campos de progreso sin cambios) ...
     @Column(length = 255)
     private String episodiosPorTemporada;
-
-    // Para ANIME / MANGA
-    private Integer totalUnidades; // (Reutilizamos este campo para totalEpisodios o totalCapitulosManga)
-
-    // Para LIBROS
+    private Integer totalUnidades;
     private Integer totalCapitulosLibro;
     private Integer totalPaginasLibro;
     
-    // --- CAMPOS ANTIGUOS (ELIMINADOS) ---
-    // private Integer totalTemporadas; // Reemplazado por episodiosPorTemporada
-    // private Boolean esUnidadUnica; // Ambigüedad eliminada (Petición c)
-    // private Integer totalCapitulos; // Renombrado a totalCapitulosLibro
-    // private Integer totalPaginas; // Renombrado a totalPaginasLibro
+    
+    // --- ¡NUEVOS CAMPOS DE RELACIONES! (Añadidos por Gemini) ---
+
+    /**
+     * Lista de elementos que son "secuelas" de este.
+     * Esta es la "dueña" de la relación.
+     * Define la tabla de unión 'elemento_relaciones'.
+     */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "elemento_relaciones",
+        // 'elemento_id' es la FK de esta entidad (la precuela)
+        joinColumns = @JoinColumn(name = "elemento_id"), 
+        // 'secuela_id' es la FK de la entidad relacionada (la secuela)
+        inverseJoinColumns = @JoinColumn(name = "secuela_id") 
+    )
+    private Set<Elemento> secuelas = new HashSet<>();
+
+    /**
+     * Lista de elementos que son "precuelas" de este.
+     * Esta es la "inversa" de la relación.
+     * Simplemente le dice a JPA que "esta lista es mantenida por
+     * el campo 'secuelas' en la otra entidad".
+     */
+    @ManyToMany(mappedBy = "secuelas", fetch = FetchType.LAZY)
+    private Set<Elemento> precuelas = new HashSet<>();
+    
+    // --- FIN DE CAMPOS AÑADIDOS ---
     
 
     public Elemento() {}
@@ -102,17 +125,31 @@ public class Elemento {
     public EstadoPublicacion getEstadoPublicacion() { return estadoPublicacion; }
     public void setEstadoPublicacion(EstadoPublicacion estadoPublicacion) { this.estadoPublicacion = estadoPublicacion; }
     
-    // --- Getters y Setters de Progreso (Refactorizados) ---
-    
+    // ... (Getters/Setters de Progreso sin cambios) ...
     public String getEpisodiosPorTemporada() { return episodiosPorTemporada; }
     public void setEpisodiosPorTemporada(String episodiosPorTemporada) { this.episodiosPorTemporada = episodiosPorTemporada; }
-    
     public Integer getTotalUnidades() { return totalUnidades; }
     public void setTotalUnidades(Integer totalUnidades) { this.totalUnidades = totalUnidades; }
-    
     public Integer getTotalCapitulosLibro() { return totalCapitulosLibro; }
     public void setTotalCapitulosLibro(Integer totalCapitulosLibro) { this.totalCapitulosLibro = totalCapitulosLibro; }
-    
     public Integer getTotalPaginasLibro() { return totalPaginasLibro; }
     public void setTotalPaginasLibro(Integer totalPaginasLibro) { this.totalPaginasLibro = totalPaginasLibro; }
+
+    // --- ¡NUEVOS GETTERS/SETTERS DE RELACIONES! ---
+    
+    public Set<Elemento> getSecuelas() {
+        return secuelas;
+    }
+    
+    public void setSecuelas(Set<Elemento> secuelas) {
+        this.secuelas = secuelas;
+    }
+    
+    public Set<Elemento> getPrecuelas() {
+        return precuelas;
+    }
+    
+    public void setPrecuelas(Set<Elemento> precuelas) {
+        this.precuelas = precuelas;
+    }
 }

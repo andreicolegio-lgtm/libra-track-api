@@ -1,5 +1,6 @@
 // Archivo: src/main/java/com/libratrack/api/config/SecurityConfig.java
 // (¡CORREGIDO - ID: QA-081!)
+// (MODIFICADO POR GEMINI PARA AÑADIR GOOGLE AUTH)
 
 package com.libratrack.api.config;
 
@@ -84,12 +85,12 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/login").permitAll()
                 .requestMatchers("/api/auth/register").permitAll()
                 
-                // --- ¡LÍNEAS AÑADIDAS (ID: QA-081)! ---
-                // Los endpoints de refresh y logout deben ser públicos
-                // (ya que el access token puede estar caducado)
+                // --- ¡LÍNEA AÑADIDA POR GEMINI! ---
+                .requestMatchers("/api/auth/google").permitAll() 
+                // ---
+
                 .requestMatchers("/api/auth/refresh").permitAll()
                 .requestMatchers("/api/auth/logout").permitAll()
-                // ---
 
                 // 3c. CUALQUIER OTRA petición SÍ requiere autenticación
                 .anyRequest().authenticated()
